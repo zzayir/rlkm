@@ -83,36 +83,43 @@ async function scanNFC() {
       await reader.scan();
       statusEl.textContent = "Ready - Tap your Ring now";
 
-      reader.onreading = (event) => {
-        statusEl.textContent = "Reading Ring...";
+reader.onreading = (event) => {
+  statusEl.textContent = "Reading Ring...";
 
-        // Optional sound
-        const beep = document.getElementById("beep");
-        beep?.play().catch((e) => console.warn("Sound failed:", e));
+  const beep = document.getElementById("beep");
+  beep?.play().catch((e) => console.warn("Sound failed:", e));
 
-        const serialNumber = event.serialNumber
-          ? formatSerialNumber(event.serialNumber)
-          : null;
+  const serialNumber = event.serialNumber
+    ? formatSerialNumber(event.serialNumber)
+    : null;
 
-        const decoder = new TextDecoder();
-        let encryptedData = null;
+  // 🔐 Serial number fallback check
+  if (!serialNumber) {
+    statusEl.textContent = "⚠️ Serial number not detected. Try a different phone.";
+    scanBtn.disabled = false;
+    return;
+  }
 
-        for (const record of event.message.records) {
-          try {
-            encryptedData = decoder.decode(record.data).trim();
-            break;
-          } catch (err) {
-            console.error("Error reading record:", err);
-          }
-        }
+  const decoder = new TextDecoder();
+  let encryptedData = null;
 
-        if (encryptedData) {
-          processNFCCard(encryptedData, serialNumber);
-        } else {
-          statusEl.textContent = "Error: No valid data on NFC ring";
-          scanBtn.disabled = false;
-        }
-      };
+  for (const record of event.message.records) {
+    try {
+      encryptedData = decoder.decode(record.data).trim();
+      break;
+    } catch (err) {
+      console.error("Error reading record:", err);
+    }
+  }
+
+  if (encryptedData) {
+    processNFCCard(encryptedData, serialNumber);
+  } else {
+    statusEl.textContent = "Error: No valid data on NFC ring";
+    scanBtn.disabled = false;
+  }
+};
+
 
       reader.onreadingerror = () => {
         statusEl.textContent = "Error: Couldn't read NFC ring";
