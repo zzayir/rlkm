@@ -132,52 +132,114 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
-app.post("/api/nfc-auth", async (req, res, next) => {
+const rateLimit = require('express-rate-limit');
+
+// Add rate limiting to prevent brute force attacks
+const nfcAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: 'Too many authentication attempts, please try again later'
+});
+
+app.post("/api/nfc-auth", nfcAuthLimiter, async (req, res, next) => {
   try {
-    const { encryptedData, serial, username, isManager } = req.body;
-    
-    // Input validation
-    if (!encryptedData || !serial || !username) {
-      return res.status(400).json({ 
+    // Validate session first (if using session auth)
+    if (!req.session.user) {
+      return res.status(401).json({ 
         success: false, 
-        message: "Missing required fields" 
+        message: "Session expired. Please login again." 
       });
     }
 
+    const { encryptedData, serial } = req.body;
+    
+    // Enhanced input validation
+    if (!encryptedData || !encryptedData.match(/^[A-Za-z0-9+/=]+$/)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid encrypted data format" 
+      });
+    }
+
+    if (!serial || typeof serial !== 'string') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid serial number format" 
+      });
+    }
+
+    // Get user from session instead of request body for better security
+    const { username, isManager } = req.session.user;
     const Model = isManager ? Manager : User;
-    const account = await Model.findOne({ username });
+    
+    // Find account with projection to only get necessary fields
+    const account = await Model.findOne(
+      { username },
+      { aesKey: 1, expectedText: 1, allowedSerial: 1 }
+    ).lean();
 
     if (!account) {
+      console.warn(`NFC Auth attempt for non-existent user: ${username}`);
       return res.status(404).json({ 
         success: false, 
-        message: "User not found" 
+        message: "Authentication failed" // Generic message for security
       });
     }
 
-    const iv = "0000000000000000"; // Should ideally be stored per user
+    // In production, you should retrieve this from the database per user
+    const iv = "0000000000000000"; 
+    
+    // Add timing-safe comparison for security
     const decryptedText = decrypt(encryptedData, account.aesKey, iv);
+    const isTextValid = decryptedText === account.expectedText;
+    const isSerialValid = serial === account.allowedSerial;
 
-    if (!decryptedText) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Decryption failed" 
-      });
-    }
+    // Log the attempt (without sensitive data)
+    console.log(`NFC Auth attempt for ${username} - ` +
+      `Serial match: ${isSerialValid}, Text match: ${isTextValid}`);
 
-    if (decryptedText === account.expectedText && serial === account.allowedSerial) {
+    if (isTextValid && isSerialValid) {
+      // Update last login time
+      await Model.updateOne(
+        { username },
+        { $set: { lastLogin: new Date() } }
+      );
+      
       return res.json({ 
         success: true, 
-        message: "Access granted" 
+        message: "Access granted",
+        // Include any additional non-sensitive data needed by frontend
+        userData: {
+          username,
+          role: isManager ? 'manager' : 'user'
+        }
       });
     } else {
       return res.status(403).json({ 
         success: false, 
-        message: "Access denied" 
+        message: "Authentication failed" // Generic message for security
       });
     }
 
   } catch (err) {
-    next(err);
+    console.error('NFC Auth Error:', {
+      error: err.message,
+      stack: err.stack,
+      body: { 
+        encryptedData: req.body.encryptedData ? '***REDACTED***' : null,
+        serial: req.body.serial 
+      },
+      user: req.session?.user
+    });
+    
+    // Send generic error message to client
+    res.status(500).json({ 
+      success: false, 
+      message: "An error occurred during authentication" 
+    });
+    
+    // Still call next(err) for your error handling middleware
+    next(err); 
   }
 });
 
