@@ -7,10 +7,15 @@ const app = express();
 const PORT = 3010;
 
 // MongoDB connection
-mongoose.connect("mongodb://localhost:27017/loginDB", {
+const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
+
+mongoose.connect(mongoURI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+  useUnifiedTopology: true
+})
+.then(() => console.log("✅ Connected to MongoDB Atlas"))
+.catch((err) => console.error("❌ MongoDB connection error:", err));
+
 
 // User schema
 const User = mongoose.model("User", {
