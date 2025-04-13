@@ -201,47 +201,77 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   }
 
 try {
+  // Validate inputs before sending to server
+  if (!encryptedBase64 || !serialNumber || !CURRENT_USERNAME) {
+    throw new Error("Missing required authentication data");
+  }
+
   // Send to server for verification
   const res = await fetch("/api/nfc-auth", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      // Add authorization if using tokens
+      ...(localStorage.getItem('token') && {
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
+      })
+    },
     body: JSON.stringify({
       encryptedData: encryptedBase64,
       serial: serialNumber,
       username: CURRENT_USERNAME,
-      isManager: false // Set appropriately based on user type
+      isManager: false // Should be determined from login response
     })
   });
 
   const data = await res.json();
 
   if (!res.ok) {
-    console.error("Server response not OK:", data);
-    throw new Error(data.message || "Authentication failed");
+    console.error("Server error response:", {
+      status: res.status,
+      statusText: res.statusText,
+      data: data
+    });
+    throw new Error(data.message || `Server responded with ${res.status}`);
   }
 
   if (data.success) {
     statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
+    // Clear sensitive data from memory after successful auth
     setTimeout(() => {
+      encryptedBase64 = '';
+      serialNumber = '';
       window.location.href = "home.html";
     }, 1000);
   } else {
     console.warn("Authentication rejected:", data);
-    statusEl.textContent = data.message || "Authentication failed";
+    statusEl.textContent = data.message || "Authentication failed. Please try again.";
     scanBtn.disabled = false;
   }
 
 } catch (err) {
-  console.error("Authentication error:", err);
+  console.error("Authentication error:", {
+    error: err,
+    encryptedData: encryptedBase64 ? '***REDACTED***' : 'MISSING',
+    serial: serialNumber ? '***REDACTED***' : 'MISSING',
+    username: CURRENT_USERNAME ? '***REDACTED***' : 'MISSING'
+  });
 
-  // Show debug data on the page for easy testing
+  // User-friendly error message
   statusEl.innerHTML = `
-    ❌ Security verification failed<br>
-    <strong>Error:</strong> ${err.message}<br>
-    <strong>Encrypted Data:</strong> ${encryptedBase64}<br>
-    <strong>Serial:</strong> ${serialNumber}<br>
-    <strong>Username:</strong> ${CURRENT_USERNAME}
+    ❌ Authentication Failed<br>
+    ${err.message}<br>
+    Please try again or contact support.
   `;
+
+  // Optionally show more details in development
+  if (process.env.NODE_ENV === 'development') {
+    statusEl.innerHTML += `
+      <br><small>Debug info:<br>
+      Error: ${err.message}<br>
+      Serial: ${serialNumber ? '***REDACTED***' : 'MISSING'}</small>
+    `;
+  }
 
   scanBtn.disabled = false;
 }
