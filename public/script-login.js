@@ -14,186 +14,175 @@
       const DEACTIVATE_KEY = "123456";
       const ACTIVATE_KEY = "654321";
 
-      // USER LOGIN
-    
-      document.getElementById("loginForm").addEventListener("submit", async function (e) {
-        e.preventDefault();
-        
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        
-        const res = await fetch("/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
-      
-        const data = await res.json();
-        alert(data.message);
-      
-        // If login is successful, call the NFC auth function
-        if (data.message === "Login successful") {
-          showNFCAuth(); // Call your NFC authentication function
-        }
-      });
-     
-      // MANAGER LOGIN
-      document.getElementById("managerLoginForm").addEventListener("submit", async function (e) {
-        e.preventDefault();
-      
-        const username = document.getElementById("managerIdentifier").value;
-        const password = document.getElementById("managerPassword").value;
-      
-        const res = await fetch("/manager-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
-      
-        const data = await res.json();
-        alert(data.message);
-      
-        if (data.message === "Login successful") {
-          showNFCAuth(username);
-        }
-      });
-      
-    //nfc authentication
+     // Global variables for NFC auth
+let USER_AES_KEY = "";
+let USER_EXPECTED_TEXT = "";
+let USER_ALLOWED_SERIAL = "";
 
-    let USER_AES_KEY = "";
-    let USER_EXPECTED_TEXT = "";
-    let USER_ALLOWED_SERIAL = "";
-    
-    async function showNFCAuth(username) {
-      const overlay = document.getElementById("nfcAuthOverlay");
-      overlay.style.display = "flex";
-    
-      // 🔄 Fetch user-specific data from server
-      try {
-        const res = await fetch(`/manager-data?username=${username}`);
-        const data = await res.json();
-    
-        if (data.message === "Manager found") {
-          USER_AES_KEY = data.aesKey;
-          USER_EXPECTED_TEXT = data.expectedText;
-          USER_ALLOWED_SERIAL = data.allowedSerial;
-          setTimeout(scanNFC, 500);
-        } else {
-          alert("Error fetching NFC authentication data");
+// USER LOGIN
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  alert(data.message);
+
+  if (data.message === "Login successful") {
+    USER_AES_KEY = data.aesKey;
+    USER_EXPECTED_TEXT = data.expectedText;
+    USER_ALLOWED_SERIAL = data.allowedSerial;
+    showNFCAuth();
+  }
+});
+
+// MANAGER LOGIN
+document.getElementById("managerLoginForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const username = document.getElementById("managerIdentifier").value;
+  const password = document.getElementById("managerPassword").value;
+
+  const res = await fetch("/manager-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  alert(data.message);
+
+  if (data.message === "Login successful") {
+    USER_AES_KEY = data.aesKey;
+    USER_EXPECTED_TEXT = data.expectedText;
+    USER_ALLOWED_SERIAL = data.allowedSerial;
+    showNFCAuth();
+  }
+});
+
+// Show NFC auth overlay and trigger scan
+async function showNFCAuth() {
+  const overlay = document.getElementById("nfcAuthOverlay");
+  overlay.style.display = "flex";
+  setTimeout(scanNFC, 500);
+}
+
+async function scanNFC() {
+  const statusEl = document.getElementById("nfcStatus");
+  const scanBtn = document.getElementById("nfcScanBtn");
+
+  statusEl.textContent = "Preparing scanner...";
+  scanBtn.disabled = true;
+
+  if ("NDEFReader" in window) {
+    try {
+      const reader = new NDEFReader();
+      await reader.scan();
+      statusEl.textContent = "Ready - Tap your Ring now";
+
+      reader.onreading = (event) => {
+        statusEl.textContent = "Reading Ring...";
+
+        // Optional sound
+        const beep = document.getElementById("beep");
+        beep?.play().catch((e) => console.warn("Sound failed:", e));
+
+        const serialNumber = event.serialNumber
+          ? formatSerialNumber(event.serialNumber)
+          : null;
+
+        const decoder = new TextDecoder();
+        let encryptedData = null;
+
+        for (const record of event.message.records) {
+          try {
+            encryptedData = decoder.decode(record.data).trim();
+            break;
+          } catch (err) {
+            console.error("Error reading record:", err);
+          }
         }
-      } catch (err) {
-        console.error("Failed to fetch user data", err);
-      }
-    }
-    
-    async function scanNFC() {
-      const statusEl = document.getElementById("nfcStatus");
-      const scanBtn = document.getElementById("nfcScanBtn");
-    
-      statusEl.textContent = "Preparing scanner...";
-      scanBtn.disabled = true;
-    
-      if ("NDEFReader" in window) {
-        try {
-          const reader = new NDEFReader();
-          await reader.scan();
-          statusEl.textContent = "Ready - Tap your Ring now";
-    
-          reader.onreading = (event) => {
-            statusEl.textContent = "Reading Ring...";
-    
-            // Optional sound
-            const beep = document.getElementById("beep");
-            beep?.play().catch((e) => console.warn("Sound failed:", e));
-    
-            const serialNumber = event.serialNumber
-              ? formatSerialNumber(event.serialNumber)
-              : null;
-    
-            const decoder = new TextDecoder();
-            let encryptedData = null;
-    
-            for (const record of event.message.records) {
-              try {
-                encryptedData = decoder.decode(record.data).trim();
-                break;
-              } catch (err) {
-                console.error("Error reading record:", err);
-              }
-            }
-    
-            if (encryptedData) {
-              processNFCCard(encryptedData, serialNumber);
-            } else {
-              statusEl.textContent = "Error: No valid data on NFC ring";
-              scanBtn.disabled = false;
-            }
-          };
-    
-          reader.onreadingerror = () => {
-            statusEl.textContent = "Error: Couldn't read NFC ring";
-            scanBtn.disabled = false;
-          };
-        } catch (err) {
-          statusEl.textContent = "NFC error: " + err.message;
+
+        if (encryptedData) {
+          processNFCCard(encryptedData, serialNumber);
+        } else {
+          statusEl.textContent = "Error: No valid data on NFC ring";
           scanBtn.disabled = false;
         }
-      } else {
-        statusEl.textContent = "NFC not supported on this device.";
-      }
-    }
-    
-    function formatSerialNumber(bytes) {
-      return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(":")
-        .toUpperCase();
-    }
-    
-    function normalizeSerialNumber(serial) {
-      return serial ? serial.replace(/:/g, "").toUpperCase() : "";
-    }
-    
-    function processNFCCard(encryptedBase64, serialNumber) {
-      const statusEl = document.getElementById("nfcStatus");
-      const scanBtn = document.getElementById("nfcScanBtn");
-    
-      const normalizedSerial = normalizeSerialNumber(serialNumber);
-      const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
-    
-      if (normalizedSerial !== normalizedAllowed) {
-        statusEl.textContent = `❌ Access Denied: Invalid Ring`;
+      };
+
+      reader.onreadingerror = () => {
+        statusEl.textContent = "Error: Couldn't read NFC ring";
         scanBtn.disabled = false;
-        return;
-      }
-    
-      try {
-        const raw = CryptoJS.enc.Base64.parse(encryptedBase64);
-        const iv = CryptoJS.lib.WordArray.create(raw.words.slice(0, 4), 16);
-        const ciphertext = CryptoJS.lib.WordArray.create(raw.words.slice(4), raw.sigBytes - 16);
-        const decrypted = CryptoJS.AES.decrypt(
-          { ciphertext },
-          CryptoJS.enc.Utf8.parse(USER_AES_KEY),
-          { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-        );
-    
-        const plainText = decrypted.toString(CryptoJS.enc.Utf8).trim();
-    
-        if (plainText === USER_EXPECTED_TEXT) {
-          statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
-          setTimeout(() => {
-            window.location.href = "home.html";
-          }, 1000);
-        } else {
-          statusEl.textContent = "❌ Invalid decrypted data";
-          scanBtn.disabled = false;
-        }
-      } catch (err) {
-        console.error("Decryption error:", err);
-        statusEl.textContent = "❌ Security verification failed";
-        scanBtn.disabled = false;
-      }
+      };
+    } catch (err) {
+      statusEl.textContent = "NFC error: " + err.message;
+      scanBtn.disabled = false;
     }
+  } else {
+    statusEl.textContent = "NFC not supported on this device.";
+  }
+}
+
+function formatSerialNumber(bytes) {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(":")
+    .toUpperCase();
+}
+
+function normalizeSerialNumber(serial) {
+  return serial ? serial.replace(/:/g, "").toUpperCase() : "";
+}
+
+function processNFCCard(encryptedBase64, serialNumber) {
+  const statusEl = document.getElementById("nfcStatus");
+  const scanBtn = document.getElementById("nfcScanBtn");
+
+  const normalizedSerial = normalizeSerialNumber(serialNumber);
+  const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
+
+  if (normalizedSerial !== normalizedAllowed) {
+    statusEl.textContent = `❌ Access Denied: Invalid Ring`;
+    scanBtn.disabled = false;
+    return;
+  }
+
+  try {
+    const raw = CryptoJS.enc.Base64.parse(encryptedBase64);
+    const iv = CryptoJS.lib.WordArray.create(raw.words.slice(0, 4), 16);
+    const ciphertext = CryptoJS.lib.WordArray.create(raw.words.slice(4), raw.sigBytes - 16);
+    const decrypted = CryptoJS.AES.decrypt(
+      { ciphertext },
+      CryptoJS.enc.Utf8.parse(USER_AES_KEY),
+      { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+    );
+
+    const plainText = decrypted.toString(CryptoJS.enc.Utf8).trim();
+
+    if (plainText === USER_EXPECTED_TEXT) {
+      statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
+      setTimeout(() => {
+        window.location.href = "home.html";
+      }, 1000);
+    } else {
+      statusEl.textContent = "❌ Invalid decrypted data";
+      scanBtn.disabled = false;
+    }
+  } catch (err) {
+    console.error("Decryption error:", err);
+    statusEl.textContent = "❌ Security verification failed";
+    scanBtn.disabled = false;
+  }
+}
+
     
     
       // Back button functionality
