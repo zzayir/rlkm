@@ -4,6 +4,8 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+const session = require("express-session"); // Added session middleware
+const rateLimit = require('express-rate-limit'); // Moved to top with other requires
 
 const app = express();
 
@@ -132,7 +134,6 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
-const rateLimit = require('express-rate-limit');
 
 // Add rate limiting to prevent brute force attacks
 const nfcAuthLimiter = rateLimit({
@@ -143,7 +144,7 @@ const nfcAuthLimiter = rateLimit({
 
 app.post("/api/nfc-auth", nfcAuthLimiter, async (req, res, next) => {
   try {
-    // Validate session first (if using session auth)
+    // You need to ensure the session is set during login
     if (!req.session.user) {
       return res.status(401).json({ 
         success: false, 
