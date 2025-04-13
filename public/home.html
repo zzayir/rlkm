@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBI - Online Banking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-home.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="./img/creslogo.png" alt=" ">
+                <span>‎  Crescent Bank of India</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="#"><i class="fas fa-wallet"></i> Accounts</a></li>
+                <li><a href="#"><i class="fas fa-exchange-alt"></i> Transfers</a></li>
+                <li><a href="#"><i class="fas fa-chart-line"></i> Investments</a></li>
+                <li><a href="#"><i class="fas fa-credit-card"></i> Cards</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            </ul>
+            <div class="user-profile" onclick="toggleDropdown()">
+                <img src="./img/zzayirprofile.jpg" alt="User">
+                <span>zzayir</span>
+                <i class="fas fa-chevron-down"></i>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="#"><i class="fas fa-user"></i> Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="sidebar">
+            <div class="quick-actions">
+                <h3>Quick Actions</h3>
+                <button class="action-btn"><i class="fas fa-paper-plane"></i> Send Money</button>
+                <button class="action-btn"><i class="fas fa-plus"></i> Pay Bills</button>
+                <button class="action-btn"><i class="fas fa-mobile-alt"></i> Mobile Top-up</button>
+                <button class="action-btn"><i class="fas fa-qrcode"></i> Scan & Pay</button>
+            </div>
+            
+            <div class="recent-transactions">
+                <h3>Recent Transactions</h3>
+                <div class="transaction">
+                    <div class="transaction-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <p>Amazon Purchase</p>
+                        <small>Today, 10:45 AM</small>
+                    </div>
+                    <div class="transaction-amount debit">
+                        -₹250.00
+                    </div>
+                </div>
+                <div class="transaction">
+                    <div class="transaction-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <p>Salary Deposit</p>
+                        <small>May 1, 9:00 AM</small>
+                    </div>
+                    <div class="transaction-amount credit">
+                        +₹2,00,000.00
+                    </div>
+                </div>
+                <div class="transaction">
+                    <div class="transaction-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <p>Starbucks</p>
+                        <small>Apr 29, 8:30 AM</small>
+                    </div>
+                    <div class="transaction-amount debit">
+                        -₹509.75
+                    </div>
+                </div>
+                <a href="#" class="view-all">View All Transactions <i class="fas fa-chevron-right"></i></a>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="welcome-banner">
+                <h1>Welcome back, zzayir!</h1>
+                <p>Here's an overview of your finances</p>
+            </div>
+
+            <div class="account-cards">
+                <div class="account-card primary">
+                    <div class="card-header">
+                        <span>Primary Account</span>
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                    <div class="card-balance">
+                        <p>Available Balance</p>
+                        <h2>₹12,55,550.50</h2>
+                    </div>
+                    <div class="card-footer">
+                        <span>**** **** **** 4567</span>
+                        <span>08/25</span>
+                    </div>
+                </div>
+
+                <div class="account-card savings">
+                    <div class="card-header">
+                        <span>Savings Account</span>
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                    <div class="card-balance">
+                        <p>Available Balance</p>
+                        <h2>₹5,40,210.00</h2>
+                    </div>
+                    <div class="card-footer">
+                        <span>**** **** **** 8910</span>
+                        <span>08/25</span>
+                    </div>
+                </div>
+
+                <div class="account-card investment">
+                    <div class="card-header">
+                        <span>Investment Account</span>
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                    <div class="card-balance">
+                        <p>Current Value</p>
+                        <h2>₹4,00,540.75</h2>
+                    </div>
+                    <div class="card-footer">
+                        <span>**** **** **** 2345</span>
+                        <span>+2.5% today</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="spending-chart">
+                    <div class="section-header">
+                        <h3>Monthly Spending</h3>
+                        <select>
+                            <option>May 2023</option>
+                            <option>April 2023</option>
+                            <option>March 2023</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="spendingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="goals">
+                    <div class="section-header">
+                        <h3>Financial Goals</h3>
+                        <button class="add-goal"><i class="fas fa-plus"></i> Add Goal</button>
+                    </div>
+                    <div class="goal-list">
+                        <div class="goal">
+                            <div class="goal-info">
+                                <h4>Emergency Fund</h4>
+                                <p>₹5,00,000 target</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 65%;"></div>
+                                </div>
+                                <small>₹3,00,250 saved (65%)</small>
+                            </div>
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                        <div class="goal">
+                            <div class="goal-info">
+                                <h4>Vacation to America</h4>
+                                <p>₹2,50,000 target</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 28%;"></div>
+                                </div>
+                                <small>₹90,800 saved (28%)</small>
+                            </div>
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                        <div class="goal">
+                            <div class="goal-info">
+                                <h4>New Car Down Payment</h4>
+                                <p>₹7,00,000 target</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 15%;"></div>
+                                </div>
+                                <small>₹1,50,000 saved (15%)</small>
+                            </div>
+                            <i class="fas fa-ellipsis-v"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <div class="section-header">
+                    <h3>Recent Activity</h3>
+                    <a href="#">See All</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="activity-icon">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <p>Amazon Purchase</p>
+                                    <small>Electronics</small>
+                                </div>
+                            </td>
+                            <td>Today, 10:45 AM</td>
+                            <td class="debit">-₹499.99</td>
+                            <td><span class="status completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="activity-icon">
+                                    <i class="fas fa-arrow-down"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <p>Salary Deposit</p>
+                                    <small>Acme Corp</small>
+                                </div>
+                            </td>
+                            <td>May 1, 9:00 AM</td>
+                            <td class="credit">+₹40,250.00</td>
+                            <td><span class="status completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="activity-icon">
+                                    <i class="fas fa-utensils"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <p>Starbucks</p>
+                                    <small>Food & Dining</small>
+                                </div>
+                            </td>
+                            <td>Apr 29, 8:30 AM</td>
+                            <td class="debit">-₹500.75</td>
+                            <td><span class="status completed">Completed</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="activity-icon">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <p>Mortgage Payment</p>
+                                    <small>Housing</small>
+                                </div>
+                            </td>
+                            <td>Apr 28, 12:00 PM</td>
+                            <td class="debit">-₹10,250.00</td>
+                            <td><span class="status pending">Pending</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script-home.js"></script>
+</body>
+</html>

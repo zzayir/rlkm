@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NFC Authentication</title>
+  <link rel="stylesheet" type="text/css" href="./style.css" />
+  <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+      font-family: Arial, sans-serif;
+    }
+    .nfc-container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .nfc-container h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      background: #0072ff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background: #005bb5;
+    }
+    .bank-logo {
+      width: 80px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nfc-container">
+    <img src="./img/creslogo.png" alt="Bank Logo" class="bank-logo" />
+    <h2>Tap your NFC card to authenticate</h2>
+    <button class="btn" onclick="scanNFC()">Scan NFC</button>
+    <p id="nfc-status"></p>
+  </div>
+
+  <script>
+    const AES_KEY = "rnb+hKFoQpJScaOrKarM3nfS5pzmHl2D";
+    const EXPECTED_TEXT = "JBSWY3DPEHPK3PXP";
+
+    async function scanNFC() {
+      if ("NDEFReader" in window) {
+        try {
+          const reader = new NDEFReader();
+          await reader.scan();
+          document.getElementById("nfc-status").innerText = "Scanning... Please tap your NFC tag.";
+
+          reader.onreading = (event) => {
+            const decoder = new TextDecoder();
+            for (const record of event.message.records) {
+              const encryptedBase64 = decoder.decode(record.data).trim();
+              document.getElementById("nfc-status").innerText = "Data read. Decrypting...";
+
+              try {
+                // Decode Base64
+                const raw = CryptoJS.enc.Base64.parse(encryptedBase64);
+
+                // Extract IV and Ciphertext
+                const iv = CryptoJS.lib.WordArray.create(raw.words.slice(0, 4), 16);
+                const ciphertext = CryptoJS.lib.WordArray.create(raw.words.slice(4), raw.sigBytes - 16);
+
+                // Decrypt
+                const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, CryptoJS.enc.Utf8.parse(AES_KEY), {
+                  iv: iv,
+                  mode: CryptoJS.mode.CBC,
+                  padding: CryptoJS.pad.Pkcs7
+                });
+
+                const plainText = decrypted.toString(CryptoJS.enc.Utf8).trim();
+
+                if (plainText === EXPECTED_TEXT) {
+                  document.getElementById("nfc-status").innerText = "✅ Authenticated!";
+                  setTimeout(() => {
+                    window.location.href = "home.html";
+                  }, 1000);
+                } else {
+                  document.getElementById("nfc-status").innerText = "❌ Invalid NFC tag.";
+                }
+
+              } catch (err) {
+                console.error("Decryption failed:", err);
+                document.getElementById("nfc-status").innerText = "❌ Decryption error.";
+              }
+            }
+          };
+        } catch (err) {
+          console.error("NFC scan failed:", err);
+          document.getElementById("nfc-status").innerText = "NFC scanning failed: " + err;
+        }
+      } else {
+        document.getElementById("nfc-status").innerText = "❌ NFC not supported on this device.";
+      }
+    }
+  </script>
+</body>
+</html>

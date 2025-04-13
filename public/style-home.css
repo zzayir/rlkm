@@ -1,0 +1,88 @@
+body {
+    font-family: "Poppins", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    color: white;
+    text-align: center;
+    margin: 0;
+}
+
+.home-container {
+    background: rgba(255, 255, 255, 0.15); /* Semi-transparent white */
+    color: white;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeInUp 1s ease-in-out;
+}
+
+h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.account-details {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.account-details p, 
+.account-details ul {
+    margin: 5px 0;
+}
+
+.account-details ul {
+    padding-left: 20px;
+}
+
+.upi-code {
+    width: 120px;
+    border-radius: 5px;
+    margin: 10px 0;
+    background: white;
+    padding: 5px;
+}
+
+.btn {
+    width: 100%;
+    background: #ff4b5c;
+    border: none;
+    outline: none;
+    padding: 12px;
+    border-radius: 25px;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.btn:hover {
+    background: #3f85f4;
+    transform: scale(1.05);
+}
+
+/* Smooth fade-in animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

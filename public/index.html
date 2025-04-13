@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f5f5f5;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .logo-container {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .logo {
+            max-width: 150px;
+            max-height: 150px;
+            animation: popUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both,
+                       moveToCorner 1s ease 1.5s forwards;
+            transform-origin: center;
+        }
+
+        .login-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            animation: fadeUp 1s ease 2.5s forwards;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 300px;
+            transform: translateY(20px);
+        }
+
+        @keyframes popUp {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes moveToCorner {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(0.5) translate(-50vw, -50vh); }
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Simple login form styles */
+        .login-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="./img/creslogo.png" alt="Logo" class="logo">
+    </div>
+
+
+    <script>
+        // If you want to actually redirect to login.html after animations
+        setTimeout(() => {
+        window.location.href = "login.html";
+        }, 3500);
+    </script>
+</body>
+</html>

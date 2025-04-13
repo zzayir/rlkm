@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRESCENT BANK - Secure Login</title>
+    <link rel="stylesheet" type="text/css" href="./style-login.css" />
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+  </head>
+  <body>
+    <div class="container">
+      <div class="forms-container">
+        <div class="signin-signup">
+          <!-- Sign In Form -->
+          <form class="sign-in-form" id="loginForm">
+            <div class="logo-container">
+              <img src="./img/creslogo.png" alt="Bank Logo" class="bank-logo">
+            </div>
+            <h1 class="bank-title">CRESCENT BANK OF INDIA</h1>
+            <h2 class="title">User Login</h2>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="text" id="username" placeholder="Username/Email" required />
+            </div>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" placeholder="Password" required />
+            </div>
+            <input type="submit" value="Login" class="btn solid" />
+          </form>
+
+          <!-- Sign Up Form -->
+          <form class="sign-up-form" id="managerLoginForm">
+            <div class="logo-container">
+              <img src="./img/creslogo.png" alt="Bank Logo" class="bank-logo">
+            </div>
+            <h1 class="bank-title">CRESCENT BANK OF INDIA</h1>
+            <h2 class="title">Employee Login</h2>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="text" id="managerIdentifier" placeholder="Username/Email" required />
+            </div>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="managerPassword" placeholder="Password" required />
+            </div>
+            <input type="submit" value="Login" class="btn solid" />
+          </form>
+        </div>
+      </div>
+
+      <!-- Panels -->
+      <div class="panels-container">
+        <div class="panel left-panel">
+          <div class="content">
+            <h3>Employee Access?</h3>
+            <p>Login with Employee credentials</p>
+            <button class="btn transparent" id="sign-up-btn">Employee Login</button>
+          </div>
+          <img src="./img/log.svg" class="image" alt="Sign up illustration" />
+        </div>
+
+        <div class="panel right-panel">
+          <div class="content">
+            <h3>Customer Access?</h3>
+            <p>Login with user credentials</p>
+            <button class="btn transparent" id="sign-in-btn">User Login</button>
+          </div>
+          <img src="./img/register.svg" class="image" alt="Sign in illustration" />
+        </div>
+      </div>
+    </div>
+
+    <!-- NFC Authentication Overlay -->
+    <div class="nfc-overlay" id="nfcAuthOverlay">
+      <div class="nfc-card">
+        <button class="back-button" id="backButton">← Back</button>
+        <div class="auth-options">
+          <button class="auth-option-btn" id="backupCodeBtn">Backup Code</button>
+          <button class="auth-option-btn" id="securityKeyBtn">Security Key</button>
+        </div>
+        <img src="./img/creslogo1.png" alt="Bank Logo" class="nfc-logo">
+        <div class="nfc-icon">
+          <i class="fas fa-id-card"></i>
+        </div>
+        <h2 class="nfc-title">Ring Authentication Required</h2>
+        <p class="nfc-subtitle">Tap your security ring to verify your identity</p>
+        <button class="nfc-btn" id="nfcScanBtn">Tap to Authenticate</button>
+        <p class="nfc-status" id="nfcStatus"></p>
+      </div>
+    </div>
+
+    <!-- Backup Code Modal -->
+    <div class="backup-code-modal" id="backupCodeModal">
+      <div class="backup-code-card">
+        <button class="back-button" id="backupCodeBackBtn">← Back</button>
+        <h2 class="backup-code-title">Enter Backup Code</h2>
+        <p class="bc-subtitle">Please enter your 12-digit backup code</p>
+        <div class="backup-code-input">
+          <input type="text" maxlength="4" id="backupCode1" pattern="\d{4}" required>
+          <input type="text" maxlength="4" id="backupCode2" pattern="\d{4}" required>
+          <input type="text" maxlength="4" id="backupCode3" pattern="\d{4}" required>
+        </div>
+        <button class="nfc-btn" id="verifyBackupCodeBtn">Verify</button>
+        <p class="nfc-status" id="backupCodeStatus"></p>
+      </div>
+    </div>
+
+    <!-- Security Key Modal -->
+    <div class="security-key-modal" id="securityKeyModal">
+      <div class="security-key-card">
+        <button class="back-button" id="securityKeyBackBtn">← Back</button>
+        <h2 class="security-key-title">Security Key Options</h2>
+        <div class="security-key-options">
+          <button class="security-key-option" id="deactivateAuthBtn">Deactivate Authenticator</button>
+          <button class="security-key-option" id="activateAuthBtn">Activate Authenticator</button>
+        </div>
+        
+        <div class="security-key-input" id="deactivateAuthInput">
+          <p class="bc-subtitle">Enter 6-digit security key to deactivate</p>
+          <input type="text" maxlength="6" id="deactivateKey" pattern="\d{6}" placeholder="Enter key">
+          <button class="nfc-btn" id="deactivateSubmitBtn">Submit</button>
+          <p class="nfc-status" id="deactivateStatus"></p>
+        </div>
+        
+        <div class="security-key-input" id="activateAuthInput">
+          <p class="bc-subtitle">Enter 6-digit security key to activate</p>
+          <input type="text" maxlength="6" id="activateKey" pattern="\d{6}" placeholder="Enter key">
+          <button class="nfc-btn" id="activateSubmitBtn">Submit</button>
+          <p class="nfc-status" id="activateStatus"></p>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+    <div class="footer-text">Created by Tetra Techies</div>
+
+    <script src="./script-login.js"></script>
+  </body>
+</html>
