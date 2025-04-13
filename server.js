@@ -151,12 +151,21 @@ function getLocalIP() {
   return "localhost";
 }
 
-console.log("Encrypted:", encryptedBase64);
+app.post("/decrypt-test", (req, res) => {
+  const { encryptedBase64, key, iv } = req.body;
+  if (!encryptedBase64 || !key || !iv) return res.status(400).send("Missing fields");
+
+  console.log("Encrypted:", encryptedBase64); // now it's defined
+  const decrypted = decrypt(encryptedBase64, key, iv);
+  res.send({ decrypted });
+});
+
 console.log("Serial (raw):", serialNumber);
 console.log("Decrypted:", plainText);
 console.log("Expected:", USER_EXPECTED_TEXT);
 
 // ====== START SERVER ======
+const PORT = process.env.PORT || 3010;
 app.listen(PORT, "0.0.0.0", () => {
   const localIP = getLocalIP();
   console.log(`\n✅ Server running at:`);
