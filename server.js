@@ -2,12 +2,12 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
+const os = require("os");
 
 const app = express();
 const PORT = 3010;
 
 // MongoDB connection
-
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
 mongoose.connect(mongoURI, {
@@ -17,41 +17,56 @@ mongoose.connect(mongoURI, {
 .then(() => console.log("✅ Connected to MongoDB Atlas"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// User schema
-const User = mongoose.model("User", {
+// User Schema
+const userSchema = new mongoose.Schema({
   username: String,
   password: String,
+  aesKey: String,
+  expectedText: String,
+  allowedSerial: String
 });
 
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "public")));
+const User = mongoose.model("User", userSchema);
 
-// Login endpoint
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  const user = await User.findOne({ username, password });
-
-  if (user) {
-    res.json({ message: "Login successful" });
-    
-  } else {
-    res.json({ message: "Invalid credentials" });
-  }
-});
-
-// MANAGER LOGIN ENDPOINT
-// Manager Schema
+// Manager Schema (same structure)
 const managerSchema = new mongoose.Schema({
   username: String,
   password: String,
+  aesKey: String,
+  expectedText: String,
+  allowedSerial: String
 });
 
 const Manager = mongoose.model("Manager", managerSchema, "employee");
 
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "public")));
 
+// Login endpoint (User)
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
 
-// Route: Manager Login
+  try {
+    const user = await User.findOne({ username, password });
+
+    if (!user) {
+      return res.json({ message: "Invalid credentials" });
+    }
+
+    res.json({
+      message: "Login successful",
+      aesKey: user.aesKey,
+      expectedText: user.expectedText,
+      allowedSerial: user.allowedSerial
+    });
+
+  } catch (error) {
+    console.error("User login error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Login endpoint (Manager)
 app.post("/manager-login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -62,19 +77,20 @@ app.post("/manager-login", async (req, res) => {
       return res.json({ message: "Invalid username or password" });
     }
 
-    res.json({ message: "Login successful" });
+    res.json({
+      message: "Login successful",
+      aesKey: manager.aesKey,
+      expectedText: manager.expectedText,
+      allowedSerial: manager.allowedSerial
+    });
 
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Manager login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
-
-
-const os = require("os");
-
+// Get local IP
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (let name in interfaces) {
@@ -87,11 +103,10 @@ function getLocalIP() {
   return "localhost";
 }
 
+// Start server
 app.listen(PORT, "0.0.0.0", () => {
   const localIP = getLocalIP();
   console.log(`\n✅ Server running at:`);
   console.log(`👉 PC:     http://localhost:${PORT}`);
   console.log(`👉 Mobile: http://${localIP}:${PORT}\n`);
 });
-
-
