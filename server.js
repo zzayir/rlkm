@@ -3,29 +3,13 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const os = require("os");
-const crypto = require("crypto");
 
 const app = express();
 
 // MongoDB connection URI - Consider using environment variables for sensitive data
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
-// AES-256-CBC decryption function with error handling
-function decrypt(encryptedBase64, key, iv) {
-  try {
-    const decipher = crypto.createDecipheriv(
-      "aes-256-cbc",
-      Buffer.from(key, "utf-8"),
-      Buffer.from(iv, "utf-8")
-    );
-    let decrypted = decipher.update(encryptedBase64, "base64", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch (err) {
-    console.error("Decryption error:", err);
-    return null;
-  }
-}
+
 
 // Connect to MongoDB with updated options
 mongoose.connect(mongoURI, {
@@ -132,6 +116,15 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
+const crypto = require("crypto");
+
+function decrypt(encryptedData, aesKey, iv) {
+  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(aesKey), Buffer.from(iv));
+  let decrypted = decipher.update(encryptedData, "base64", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
+}
+
 app.post("/api/nfc-auth", async (req, res, next) => {
   try {
     const { encryptedData, serial, username, isManager } = req.body;
@@ -154,7 +147,7 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
-    const iv = "0000000000000000"; // Should ideally be stored per user
+    const iv = "0000000000000000"; // Static IV for simplicity, use a random IV in production
     const decryptedText = decrypt(encryptedData, account.aesKey, iv);
 
     if (!decryptedText) {
@@ -164,6 +157,7 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
+    // Check if the decrypted text matches the expected text and serial number
     if (decryptedText === account.expectedText && serial === account.allowedSerial) {
       return res.json({ 
         success: true, 
