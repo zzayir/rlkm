@@ -194,6 +194,7 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   const normalizedSerial = normalizeSerialNumber(serialNumber);
   const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
 
+  // Serial number validation
   if (normalizedSerial !== normalizedAllowed) {
     statusEl.textContent = `❌ Access Denied: Invalid card (Serial: ${serialNumber || 'unknown'})`;
     scanBtn.disabled = false;
@@ -201,7 +202,7 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   }
 
   try {
-    // Send to server for verification
+    // Send the encrypted NFC data to the server for authentication
     const res = await fetch("/api/nfc-auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -209,7 +210,7 @@ async function processNFCCard(encryptedBase64, serialNumber) {
         encryptedData: encryptedBase64,
         serial: serialNumber,
         username: CURRENT_USERNAME,
-        isManager: false // Set appropriately based on user type
+        isManager: false // Adjust based on user type
       })
     });
 
@@ -234,6 +235,7 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     scanBtn.disabled = false;
   }
 }
+
 
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
