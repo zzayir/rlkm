@@ -3,30 +3,33 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const os = require("os");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = 3010;
 
-const crypto = require('crypto');
+// MongoDB connection URI
+const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
 // AES-256-CBC decryption function
 function decrypt(encryptedBase64, key, iv) {
-  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), Buffer.from(iv, 'utf-8'));
-  let decrypted = decipher.update(encryptedBase64, 'base64', 'utf8');
-  decrypted += decipher.final('utf8');
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    Buffer.from(key, "utf-8"),
+    Buffer.from(iv, "utf-8")
+  );
+  let decrypted = decipher.update(encryptedBase64, "base64", "utf8");
+  decrypted += decipher.final("utf8");
   return decrypted;
 }
 
-
-// MongoDB connection
-const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
-
+// Connect to MongoDB
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log("✅ Connected to MongoDB Atlas"))
-.catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -39,7 +42,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// Manager Schema (same structure)
+// Manager Schema (in 'employee' collection)
 const managerSchema = new mongoose.Schema({
   username: String,
   password: String,
@@ -52,6 +55,8 @@ const Manager = mongoose.model("Manager", managerSchema, "employee");
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+// ===== LOGIN ROUTES =====
 
 // Login endpoint (User)
 app.post("/login", async (req, res) => {
@@ -66,9 +71,8 @@ app.post("/login", async (req, res) => {
 
     res.json({
       message: "Login successful",
-      aesKey: user.aesKey,
-      expectedText: user.expectedText,
-      allowedSerial: user.allowedSerial
+      username: user.username,
+      role: "user"
     });
 
   } catch (error) {
@@ -85,14 +89,13 @@ app.post("/manager-login", async (req, res) => {
     const manager = await Manager.findOne({ username, password });
 
     if (!manager) {
-      return res.json({ message: "Invalid username or password" });
+      return res.json({ message: "Invalid credentials" });
     }
 
     res.json({
       message: "Login successful",
-      aesKey: manager.aesKey,
-      expectedText: manager.expectedText,
-      allowedSerial: manager.allowedSerial
+      username: manager.username,
+      role: "manager"
     });
 
   } catch (error) {
@@ -101,7 +104,34 @@ app.post("/manager-login", async (req, res) => {
   }
 });
 
-// Get local IP
+// ===== NFC AUTHENTICATION ROUTE =====
+app.post("/api/nfc-auth", async (req, res) => {
+  const { encryptedData, serial, username, isManager } = req.body;
+
+  try {
+    const Model = isManager ? Manager : User;
+    const account = await Model.findOne({ username });
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const iv = "0000000000000000"; // 16-byte static IV (or retrieve from DB if you stored it)
+    const decryptedText = decrypt(encryptedData, account.aesKey, iv);
+
+    if (decryptedText === account.expectedText && serial === account.allowedSerial) {
+      return res.json({ success: true, message: "Access granted" });
+    } else {
+      return res.json({ success: false, message: "Access denied" });
+    }
+
+  } catch (err) {
+    console.error("NFC auth error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ====== HELPER: Get Local IP ======
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (let name in interfaces) {
@@ -114,9 +144,7 @@ function getLocalIP() {
   return "localhost";
 }
 
-
-
-// Start server
+// ====== START SERVER ======
 app.listen(PORT, "0.0.0.0", () => {
   const localIP = getLocalIP();
   console.log(`\n✅ Server running at:`);
