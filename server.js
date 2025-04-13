@@ -70,10 +70,13 @@ app.post("/login", async (req, res) => {
     }
 
     res.json({
-      message: "Login successful",
-      username: user.username,
-      role: "user"
-    });
+  message: "Login successful",
+  username: user.username,
+  role: "user",
+  aesKey: user.aesKey,
+  expectedText: user.expectedText,
+  allowedSerial: user.allowedSerial
+});
 
   } catch (error) {
     console.error("User login error:", error);
@@ -92,11 +95,15 @@ app.post("/manager-login", async (req, res) => {
       return res.json({ message: "Invalid credentials" });
     }
 
-    res.json({
-      message: "Login successful",
-      username: manager.username,
-      role: "manager"
-    });
+res.json({
+  message: "Login successful",
+  username: manager.username,
+  role: "manager",
+  aesKey: manager.aesKey,
+  expectedText: manager.expectedText,
+  allowedSerial: manager.allowedSerial
+});
+
 
   } catch (error) {
     console.error("Manager login error:", error);
