@@ -6,7 +6,6 @@ const os = require("os");
 const crypto = require("crypto");
 
 const app = express();
-const PORT = 3010;
 
 // MongoDB connection URI
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
