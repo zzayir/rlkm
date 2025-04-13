@@ -86,12 +86,6 @@ function getLocalIP() {
   }
   return "localhost";
 }
-
-app.listen(PORT, "0.0.0.0", () => {
-  const localIP = getLocalIP();
-  console.log(`\n✅ Server running at:`);
-  console.log(`👉 PC:     http://localhost:${PORT}`);
-  console.log(`👉 Mobile: http://${localIP}:${PORT}\n`);
 });
 
 
