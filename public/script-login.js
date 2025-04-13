@@ -1,5 +1,4 @@
-
-      const VALID_BACKUP_CODES = [
+const VALID_BACKUP_CODES = [
         "615553793183",
         "941942329520",
         "076814800653",
