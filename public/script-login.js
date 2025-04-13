@@ -1,8 +1,4 @@
-      const AES_KEY = "rnb+hKFoQpJScaOrKarM3nfS5pzmHl2D";
-      const EXPECTED_TEXT = "JBSWY3DPEHPK3PXP";
-      const ALLOWED_SERIAL_NUMBER = "00:04:0::05:07:0::05:04:0::05:02:0::0A:06:0::01:0C:0::09:00"; // Only this serial number will work
-      
-      // Valid backup codes
+
       const VALID_BACKUP_CODES = [
         "615553793183",
         "941942329520",
