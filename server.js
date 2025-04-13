@@ -151,6 +151,11 @@ function getLocalIP() {
   return "localhost";
 }
 
+console.log("Encrypted:", encryptedBase64);
+console.log("Serial (raw):", serialNumber);
+console.log("Decrypted:", plainText);
+console.log("Expected:", USER_EXPECTED_TEXT);
+
 // ====== START SERVER ======
 app.listen(PORT, "0.0.0.0", () => {
   const localIP = getLocalIP();
