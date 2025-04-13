@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        #scanButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #scanButton:disabled {
+            background-color: #ddd;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>NFC Scanner</h1>
+    <button id="scanButton" onclick="startScan()">Start Scanning</button>
+    <div id="status"></div>
+    <div class="result">
+        <p><strong>Serial Number:</strong> <span id="serialNumber">N/A</span></p>
+        <p><strong>Data:</strong> <span id="nfcData">N/A</span></p>
+    </div>
+
+    <script>
+        let scanButton = document.getElementById("scanButton");
+        let serialNumberElement = document.getElementById("serialNumber");
+        let nfcDataElement = document.getElementById("nfcData");
+        let statusElement = document.getElementById("status");
+
+        async function startScan() {
+            if ('NFC' in window) {
+                try {
+                    // Enable the scanning button
+                    scanButton.disabled = true;
+                    statusElement.textContent = "Scanning for NFC...";
+
+                    // Request NFC permission
+                    const nfc = new NFC();
+                    await nfc.requestPermission();
+
+                    // Listen for NFC tag and retrieve data
+                    const reader = await nfc.scan();
+                    reader.on("reading", (event) => {
+                        const serialNumber = event.serialNumber;
+                        const nfcData = event.message;
+
+                        // Display the serial number and NFC data
+                        serialNumberElement.textContent = serialNumber;
+                        nfcDataElement.textContent = nfcData;
+
+                        // Optionally, you can send this data to your backend for storage
+                        saveDataToDatabase(serialNumber, nfcData);
+                    });
+
+                    reader.start();
+                } catch (error) {
+                    statusElement.textContent = "Error: " + error.message;
+                    scanButton.disabled = false;
+                }
+            } else {
+                statusElement.textContent = "Web NFC is not supported on this device.";
+                scanButton.disabled = false;
+            }
+        }
+
+        async function saveDataToDatabase(serialNumber, nfcData) {
+            try {
+                const response = await fetch("/save-nfc-data", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        serialNumber: serialNumber,
+                        data: nfcData
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log("NFC data saved successfully!");
+                } else {
+                    console.error("Failed to save NFC data.");
+                }
+            } catch (error) {
+                console.error("Error saving NFC data:", error);
+            }
+        }
+    </script>
+</body>
+</html>
