@@ -86,6 +86,10 @@ function getLocalIP() {
   }
   return "localhost";
 }
+
+app.listen(3010, () => {
+  console.log("Server started");
+});
 });
 
 
