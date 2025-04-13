@@ -9,7 +9,7 @@ const VALID_BACKUP_CODES = [
 const DEACTIVATE_KEY = "123456";
 const ACTIVATE_KEY = "654321";
 
-// Global variables for NFC auth (consider using sessionStorage instead)
+// Global variables for NFC auth
 let USER_AES_KEY = "";
 let USER_EXPECTED_TEXT = "";
 let USER_ALLOWED_SERIAL = "";
@@ -201,73 +201,36 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   }
 
   try {
-    // Validate inputs before sending to server
-    if (!encryptedBase64 || !serialNumber || !CURRENT_USERNAME) {
-      throw new Error("Missing required authentication data");
-    }
-
     // Send to server for verification
     const res = await fetch("/api/nfc-auth", {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        ...(localStorage.getItem('token') && {
-          "Authorization": `Bearer ${localStorage.getItem('token')}`
-        })
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         encryptedData: encryptedBase64,
         serial: serialNumber,
         username: CURRENT_USERNAME,
-        isManager: false
+        isManager: false // Set appropriately based on user type
       })
     });
 
     const data = await res.json();
-
+    
     if (!res.ok) {
-      console.error("Server error response:", {
-        status: res.status,
-        statusText: res.statusText,
-        data: data
-      });
-      throw new Error(data.message || `Server responded with ${res.status}`);
+      throw new Error(data.message || "Authentication failed");
     }
 
     if (data.success) {
       statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
       setTimeout(() => {
-        encryptedBase64 = '';
-        serialNumber = '';
         window.location.href = "home.html";
       }, 1000);
     } else {
-      console.warn("Authentication rejected:", data);
-      statusEl.textContent = data.message || "Authentication failed. Please try again.";
+      statusEl.textContent = data.message || "Authentication failed";
       scanBtn.disabled = false;
     }
   } catch (err) {
-    console.error("Authentication error:", {
-      error: err,
-      encryptedData: encryptedBase64 ? '***REDACTED***' : 'MISSING',
-      serial: serialNumber ? '***REDACTED***' : 'MISSING',
-      username: CURRENT_USERNAME ? '***REDACTED***' : 'MISSING'
-    });
-
-    statusEl.innerHTML = `
-      ❌ Authentication Failed<br>
-      ${err.message}<br>
-      Please try again or contact support.
-    `;
-
-    if (process.env.NODE_ENV === 'development') {
-      statusEl.innerHTML += `
-        <br><small>Debug info:<br>
-        Error: ${err.message}<br>
-        Serial: ${serialNumber ? '***REDACTED***' : 'MISSING'}</small>
-      `;
-    }
-
+    console.error("Authentication error:", err);
+    statusEl.textContent = "❌ Security verification failed";
     scanBtn.disabled = false;
   }
 }
@@ -289,6 +252,7 @@ document.getElementById("backupCodeBtn")?.addEventListener("click", function() {
   if (overlay) overlay.style.display = "none";
   if (modal) modal.style.display = "flex";
   
+  // Auto-focus first input
   const input = document.getElementById("backupCode1");
   if (input) input.focus();
 });
@@ -301,6 +265,7 @@ document.getElementById("backupCodeBackBtn")?.addEventListener("click", function
   if (modal) modal.style.display = "none";
   if (overlay) overlay.style.display = "flex";
   
+  // Clear backup code inputs
   document.getElementById("backupCode1").value = "";
   document.getElementById("backupCode2").value = "";
   document.getElementById("backupCode3").value = "";
@@ -360,6 +325,7 @@ document.getElementById("securityKeyBackBtn")?.addEventListener("click", functio
   if (modal) modal.style.display = "none";
   if (overlay) overlay.style.display = "flex";
   
+  // Hide any input fields that might be showing
   document.getElementById("deactivateAuthInput").style.display = "none";
   document.getElementById("activateAuthInput").style.display = "none";
 });
@@ -391,6 +357,7 @@ document.getElementById("deactivateSubmitBtn")?.addEventListener("click", functi
 
   if (key === DEACTIVATE_KEY) {
     statusEl.innerHTML = "✅ Authenticator deactivated successfully!";
+    // Here you would typically make an API call to deactivate the authenticator
   } else {
     statusEl.textContent = "❌ Invalid security key. Please try again.";
   }
@@ -405,6 +372,7 @@ document.getElementById("activateSubmitBtn")?.addEventListener("click", function
 
   if (key === ACTIVATE_KEY) {
     statusEl.innerHTML = "✅ Authenticator activated successfully!";
+    // Here you would typically make an API call to activate the authenticator
   } else {
     statusEl.textContent = "❌ Invalid security key. Please try again.";
   }
