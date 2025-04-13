@@ -7,6 +7,7 @@ const app = express();
 const PORT = 3010;
 
 // MongoDB connection
+
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
 mongoose.connect(mongoURI, {
@@ -15,7 +16,6 @@ mongoose.connect(mongoURI, {
 })
 .then(() => console.log("✅ Connected to MongoDB Atlas"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
-
 
 // User schema
 const User = mongoose.model("User", {
@@ -87,9 +87,11 @@ function getLocalIP() {
   return "localhost";
 }
 
-app.listen(3010, () => {
-  console.log("Server started");
-});
+app.listen(PORT, "0.0.0.0", () => {
+  const localIP = getLocalIP();
+  console.log(`\n✅ Server running at:`);
+  console.log(`👉 PC:     http://localhost:${PORT}`);
+  console.log(`👉 Mobile: http://${localIP}:${PORT}\n`);
 });
 
 
