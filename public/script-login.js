@@ -200,40 +200,52 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     return;
   }
 
-  try {
-    // Send to server for verification
-    const res = await fetch("/api/nfc-auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        encryptedData: encryptedBase64,
-        serial: serialNumber,
-        username: CURRENT_USERNAME,
-        isManager: false // Set appropriately based on user type
-      })
-    });
+try {
+  // Send to server for verification
+  const res = await fetch("/api/nfc-auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      encryptedData: encryptedBase64,
+      serial: serialNumber,
+      username: CURRENT_USERNAME,
+      isManager: false // Set appropriately based on user type
+    })
+  });
 
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.message || "Authentication failed");
-    }
+  const data = await res.json();
 
-    if (data.success) {
-      statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
-      setTimeout(() => {
-        window.location.href = "home.html";
-      }, 1000);
-    } else {
-      statusEl.textContent = data.message || "Authentication failed";
-      scanBtn.disabled = false;
-    }
-  } catch (err) {
-    console.error("Authentication error:", err);
-    statusEl.textContent = "❌ Security verification failed";
+  if (!res.ok) {
+    console.error("Server response not OK:", data);
+    throw new Error(data.message || "Authentication failed");
+  }
+
+  if (data.success) {
+    statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
+    setTimeout(() => {
+      window.location.href = "home.html";
+    }, 1000);
+  } else {
+    console.warn("Authentication rejected:", data);
+    statusEl.textContent = data.message || "Authentication failed";
     scanBtn.disabled = false;
   }
+
+} catch (err) {
+  console.error("Authentication error:", err);
+
+  // Show debug data on the page for easy testing
+  statusEl.innerHTML = `
+    ❌ Security verification failed<br>
+    <strong>Error:</strong> ${err.message}<br>
+    <strong>Encrypted Data:</strong> ${encryptedBase64}<br>
+    <strong>Serial:</strong> ${serialNumber}<br>
+    <strong>Username:</strong> ${CURRENT_USERNAME}
+  `;
+
+  scanBtn.disabled = false;
 }
+
 
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
