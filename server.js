@@ -7,6 +7,17 @@ const os = require("os");
 const app = express();
 const PORT = 3010;
 
+const crypto = require('crypto');
+
+// AES-256-CBC decryption function
+function decrypt(encryptedBase64, key, iv) {
+  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key, 'utf-8'), Buffer.from(iv, 'utf-8'));
+  let decrypted = decipher.update(encryptedBase64, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+
 // MongoDB connection
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
@@ -102,6 +113,8 @@ function getLocalIP() {
   }
   return "localhost";
 }
+
+
 
 // Start server
 app.listen(PORT, "0.0.0.0", () => {
