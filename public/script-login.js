@@ -153,7 +153,7 @@ function processNFCCard(encryptedBase64, serialNumber) {
   const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
 
   if (normalizedSerial !== normalizedAllowed) {
-    statusEl.textContent = `❌ Access Denied: Invalid Ring`;
+    statusEl.textContent = ❌ Access Denied: Invalid card (Serial: ${serialNumber || 'unknown'});
     scanBtn.disabled = false;
     return;
   }
