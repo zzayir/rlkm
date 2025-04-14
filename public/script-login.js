@@ -1,19 +1,10 @@
-const VALID_BACKUP_CODES = [
-  "615553793183",
-  "941942329520",
-  "076814800653",
-  "005048598496"
-];
-
-// Security keys
-const DEACTIVATE_KEY = "123456";
-const ACTIVATE_KEY = "654321";
-
-// Global variables for NFC auth
+// Global variables for user auth data
 let USER_AES_KEY = "";
 let USER_EXPECTED_TEXT = "";
 let USER_ALLOWED_SERIAL = "";
 let CURRENT_USERNAME = "";
+let USER_BACKUP_CODES = [];
+let USER_SECURITY_KEYS = {};
 
 // USER LOGIN
 document.getElementById("loginForm")?.addEventListener("submit", async function (e) {
@@ -43,10 +34,14 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
     alert(data.message);
 
     if (data.message === "Login successful") {
-      USER_AES_KEY = data.aesKey;
-      USER_EXPECTED_TEXT = data.expectedText;
-      USER_ALLOWED_SERIAL = data.allowedSerial;
+      // Store all authentication data from the database
+      USER_AES_KEY = data.authData.aesKey;
+      USER_EXPECTED_TEXT = data.authData.expectedText;
+      USER_ALLOWED_SERIAL = data.authData.allowedSerial;
       CURRENT_USERNAME = data.username;
+      USER_BACKUP_CODES = data.authData.backupCodes || [];
+      USER_SECURITY_KEYS = data.authData.securityKeys || {};
+      
       showNFCAuth();
     }
   } catch (error) {
@@ -83,10 +78,14 @@ document.getElementById("managerLoginForm")?.addEventListener("submit", async fu
     alert(data.message);
 
     if (data.message === "Login successful") {
-      USER_AES_KEY = data.aesKey;
-      USER_EXPECTED_TEXT = data.expectedText;
-      USER_ALLOWED_SERIAL = data.allowedSerial;
+      // Store all authentication data from the database
+      USER_AES_KEY = data.authData.aesKey;
+      USER_EXPECTED_TEXT = data.authData.expectedText;
+      USER_ALLOWED_SERIAL = data.authData.allowedSerial;
       CURRENT_USERNAME = data.username;
+      USER_BACKUP_CODES = data.authData.backupCodes || [];
+      USER_SECURITY_KEYS = data.authData.securityKeys || {};
+      
       showNFCAuth();
     }
   } catch (error) {
@@ -210,6 +209,8 @@ async function processNFCCard(encryptedBase64, serialNumber) {
         encryptedData: encryptedBase64,
         serial: serialNumber,
         username: CURRENT_USERNAME,
+        aesKey: USER_AES_KEY,
+        expectedText: USER_EXPECTED_TEXT,
         isManager: false // Adjust based on user type
       })
     });
@@ -235,7 +236,6 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     scanBtn.disabled = false;
   }
 }
-
 
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
@@ -275,7 +275,7 @@ document.getElementById("backupCodeBackBtn")?.addEventListener("click", function
 });
 
 // Verify backup code
-document.getElementById("verifyBackupCodeBtn")?.addEventListener("click", function() {
+document.getElementById("verifyBackupCodeBtn")?.addEventListener("click", async function() {
   const code1 = document.getElementById("backupCode1")?.value || "";
   const code2 = document.getElementById("backupCode2")?.value || "";
   const code3 = document.getElementById("backupCode3")?.value || "";
@@ -285,13 +285,46 @@ document.getElementById("verifyBackupCodeBtn")?.addEventListener("click", functi
   
   if (!statusEl) return;
 
-  if (VALID_BACKUP_CODES.includes(fullCode)) {
-    statusEl.innerHTML = "✅ Backup code verified!<br>Redirecting...";
-    setTimeout(() => {
-      window.location.href = "home.html";
-    }, 1000);
-  } else {
-    statusEl.textContent = "❌ Invalid backup code. Please try again.";
+  try {
+    const res = await fetch("/api/verify-backup-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: CURRENT_USERNAME,
+        code: fullCode,
+        isManager: false
+      })
+    });
+
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || "Verification failed");
+    }
+
+    if (data.success) {
+      statusEl.innerHTML = "✅ Backup code verified!<br>Redirecting...";
+      
+      // Mark the code as used
+      await fetch("/api/mark-backup-code-used", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: CURRENT_USERNAME,
+          code: fullCode,
+          isManager: false
+        })
+      });
+      
+      setTimeout(() => {
+        window.location.href = "home.html";
+      }, 1000);
+    } else {
+      statusEl.textContent = "❌ Invalid backup code. Please try again.";
+    }
+  } catch (error) {
+    console.error("Backup code error:", error);
+    statusEl.textContent = "❌ Error verifying backup code";
   }
 });
 
@@ -351,31 +384,93 @@ document.getElementById("activateAuthBtn")?.addEventListener("click", function()
 });
 
 // Deactivate submit button
-document.getElementById("deactivateSubmitBtn")?.addEventListener("click", function() {
+document.getElementById("deactivateSubmitBtn")?.addEventListener("click", async function() {
   const key = document.getElementById("deactivateKey")?.value || "";
   const statusEl = document.getElementById("deactivateStatus");
   
   if (!statusEl) return;
 
-  if (key === DEACTIVATE_KEY) {
-    statusEl.innerHTML = "✅ Authenticator deactivated successfully!";
-    // Here you would typically make an API call to deactivate the authenticator
-  } else {
-    statusEl.textContent = "❌ Invalid security key. Please try again.";
+  try {
+    const res = await fetch("/api/verify-security-key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: CURRENT_USERNAME,
+        key: key,
+        keyType: "deactivateKey",
+        isManager: false
+      })
+    });
+
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || "Verification failed");
+    }
+
+    if (data.success) {
+      statusEl.innerHTML = "✅ Authenticator deactivated successfully!";
+      
+      // Call deactivation API
+      await fetch("/api/deactivate-authenticator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: CURRENT_USERNAME,
+          isManager: false
+        })
+      });
+    } else {
+      statusEl.textContent = "❌ Invalid security key. Please try again.";
+    }
+  } catch (error) {
+    console.error("Deactivation error:", error);
+    statusEl.textContent = "❌ Error during deactivation";
   }
 });
 
 // Activate submit button
-document.getElementById("activateSubmitBtn")?.addEventListener("click", function() {
+document.getElementById("activateSubmitBtn")?.addEventListener("click", async function() {
   const key = document.getElementById("activateKey")?.value || "";
   const statusEl = document.getElementById("activateStatus");
   
   if (!statusEl) return;
 
-  if (key === ACTIVATE_KEY) {
-    statusEl.innerHTML = "✅ Authenticator activated successfully!";
-    // Here you would typically make an API call to activate the authenticator
-  } else {
-    statusEl.textContent = "❌ Invalid security key. Please try again.";
+  try {
+    const res = await fetch("/api/verify-security-key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: CURRENT_USERNAME,
+        key: key,
+        keyType: "activateKey",
+        isManager: false
+      })
+    });
+
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || "Verification failed");
+    }
+
+    if (data.success) {
+      statusEl.innerHTML = "✅ Authenticator activated successfully!";
+      
+      // Call activation API
+      await fetch("/api/activate-authenticator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: CURRENT_USERNAME,
+          isManager: false
+        })
+      });
+    } else {
+      statusEl.textContent = "❌ Invalid security key. Please try again.";
+    }
+  } catch (error) {
+    console.error("Activation error:", error);
+    statusEl.textContent = "❌ Error during activation";
   }
 });
