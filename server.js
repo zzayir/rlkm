@@ -169,6 +169,7 @@ function decryptNFCData(encryptedBase64, aesKeyHex) {
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
+    console.log("Request received for NFC Auth", req.body);
   try {
     const { encryptedData, serial, username, isManager } = req.body;
     
