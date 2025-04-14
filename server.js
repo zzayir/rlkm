@@ -169,10 +169,12 @@ function decryptNFCData(encryptedBase64, aesKeyHex) {
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
+  console.log("Request received for NFC Auth", req.body);
   try {
     const { encryptedData, serial, username, isManager } = req.body;
     
     if (!encryptedData || !serial || !username) {
+      console.log("❌ Missing required fields");
       return res.status(400).json({ 
         success: false, 
         message: "Missing required fields" 
@@ -183,6 +185,7 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     const account = await Model.findOne({ username });
 
     if (!account) {
+      console.log("❌ User not found");
       return res.status(404).json({ 
         success: false, 
         message: "User not found" 
@@ -194,8 +197,12 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     const normalizedInput = normalizeSerial(serial);
     const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
 
+     console.log("Input Serial:", inputSerial);
+    console.log("Stored Serial:", storedSerial);
+
     // Serial number validation
     if (normalizedInput !== normalizedAllowed) {
+      console.log("❌ Invalid Serial Number");
       return res.status(403).json({ 
         success: false, 
         message: "Access denied: Invalid NFC device" 
@@ -205,7 +212,11 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     // Perform decryption
     const decryptedText = decryptNFCData(encryptedData, account.authData.aesKey);
 
+    console.log("🔓 Decrypted NFC Text:", decryptedText);
+    console.log("✅ Expected Text:", account.authData.expectedText);
+
     if (!decryptedText) {
+      console.log("❌ Decryption failed");
       return res.status(400).json({ 
         success: false, 
         message: "Decryption failed" 
@@ -214,11 +225,13 @@ app.post("/api/nfc-auth", async (req, res, next) => {
 
     // Verify decrypted text matches expected text
     if (decryptedText === account.authData.expectedText) {
+      console.log("✅ Access Granted");
       return res.json({ 
         success: true, 
         message: "Access granted" 
       });
     } else {
+      console.log("❌ Access Denied: Text Mismatch");
       return res.status(403).json({ 
         success: false, 
         message: "Access denied: Invalid NFC data" 
@@ -226,6 +239,7 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     }
 
   } catch (err) {
+    console.error("🔥 Server Error:", err);
     next(err);
   }
 });
