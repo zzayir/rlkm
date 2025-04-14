@@ -3,44 +3,57 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const os = require("os");
+const crypto = require("crypto");
 
 const app = express();
 
 // MongoDB connection URI - Consider using environment variables for sensitive data
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
-
-
 // Connect to MongoDB with updated options
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  serverSelectionTimeoutMS: 5000,
 })
   .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch(err => {
     console.error("❌ MongoDB connection error:", err);
-    process.exit(1); // Exit process if DB connection fails
+    process.exit(1);
   });
 
-// User Schema with required fields
+// Enhanced User Schema with authentication data
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  aesKey: { type: String, required: true },
-  expectedText: { type: String, required: true },
-  allowedSerial: { type: String, required: true }
+  authData: {
+    aesKey: { type: String, required: true },
+    expectedText: { type: String, required: true },
+    allowedSerial: { type: String, required: true },
+    backupCodes: [{ type: String, required: true }],
+    securityKeys: {
+      deactivateKey: { type: String, required: true },
+      activateKey: { type: String, required: true }
+    }
+  }
 });
 
 const User = mongoose.model("User", userSchema);
 
-// Manager Schema (in 'employee' collection)
+// Enhanced Manager Schema (in 'employee' collection)
 const managerSchema = new mongoose.Schema({
-  username: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  aesKey: { type: String, required: true },
-  expectedText: { type: String, required: true },
-  allowedSerial: { type: String, required: true }
+  authData: {
+    aesKey: { type: String, required: true },
+    expectedText: { type: String, required: true },
+    allowedSerial: { type: String, required: true },
+    backupCodes: [{ type: String, required: true }],
+    securityKeys: {
+      deactivateKey: { type: String, required: true },
+      activateKey: { type: String, required: true }
+    }
+  }
 });
 
 const Manager = mongoose.model("Manager", managerSchema, "employee");
@@ -52,7 +65,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: "Something went wrong!" });
+  res.status(500).json({ success: false, message: "Something went wrong!" });
 });
 
 // ===== LOGIN ROUTES =====
@@ -63,26 +76,35 @@ app.post("/login", async (req, res, next) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+      return res.status(400).json({ 
+        success: false,
+        message: "Username and password are required" 
+      });
     }
 
     const user = await User.findOne({ username, password });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid credentials" 
+      });
     }
 
     res.json({
+      success: true,
       message: "Login successful",
       username: user.username,
       role: "user",
-      aesKey: user.aesKey,
-      expectedText: user.expectedText,
-      allowedSerial: user.allowedSerial
+      aesKey: user.authData.aesKey,
+      expectedText: user.authData.expectedText,
+      allowedSerial: user.authData.allowedSerial,
+      backupCodes: user.authData.backupCodes,
+      securityKeys: user.authData.securityKeys
     });
 
   } catch (error) {
-    next(error); // Pass errors to the error-handling middleware
+    next(error);
   }
 });
 
@@ -92,22 +114,31 @@ app.post("/manager-login", async (req, res, next) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+      return res.status(400).json({ 
+        success: false,
+        message: "Username and password are required" 
+      });
     }
 
     const manager = await Manager.findOne({ username, password });
 
     if (!manager) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid credentials" 
+      });
     }
 
     res.json({
+      success: true,
       message: "Login successful",
       username: manager.username,
       role: "manager",
-      aesKey: manager.aesKey,
-      expectedText: manager.expectedText,
-      allowedSerial: manager.allowedSerial
+      aesKey: manager.authData.aesKey,
+      expectedText: manager.authData.expectedText,
+      allowedSerial: manager.authData.allowedSerial,
+      backupCodes: manager.authData.backupCodes,
+      securityKeys: manager.authData.securityKeys
     });
 
   } catch (error) {
@@ -116,20 +147,22 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
-const crypto = require("crypto");
-
 function decrypt(encryptedData, aesKey, iv) {
-  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(aesKey), Buffer.from(iv));
-  let decrypted = decipher.update(encryptedData, "base64", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  try {
+    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(aesKey, 'hex'), Buffer.from(iv, 'hex'));
+    let decrypted = decipher.update(encryptedData, "base64", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch (err) {
+    console.error("Decryption error:", err);
+    return null;
+  }
 }
 
 app.post("/api/nfc-auth", async (req, res, next) => {
   try {
-    const { encryptedData, serial, username, isManager } = req.body;
+    const { encryptedData, serial, username, isManager, aesKey, expectedText } = req.body;
     
-    // Input validation
     if (!encryptedData || !serial || !username) {
       return res.status(400).json({ 
         success: false, 
@@ -147,8 +180,12 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
-    const iv = "0000000000000000"; // Static IV for simplicity, use a random IV in production
-    const decryptedText = decrypt(encryptedData, account.aesKey, iv);
+    // Use the provided key or fall back to stored key
+    const decryptionKey = aesKey || account.authData.aesKey;
+    const expectedDecryptedText = expectedText || account.authData.expectedText;
+    
+    const iv = "0000000000000000"; // Should be dynamic in production
+    const decryptedText = decrypt(encryptedData, decryptionKey, iv);
 
     if (!decryptedText) {
       return res.status(400).json({ 
@@ -157,8 +194,12 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
-    // Check if the decrypted text matches the expected text and serial number
-    if (decryptedText === account.expectedText && serial === account.allowedSerial) {
+    // Normalize serial numbers for comparison
+    const normalizeSerial = (serial) => serial ? serial.replace(/:/g, "").toUpperCase() : "";
+    const normalizedInput = normalizeSerial(serial);
+    const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
+
+    if (decryptedText === expectedDecryptedText && normalizedInput === normalizedAllowed) {
       return res.json({ 
         success: true, 
         message: "Access granted" 
@@ -169,6 +210,178 @@ app.post("/api/nfc-auth", async (req, res, next) => {
         message: "Access denied" 
       });
     }
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ===== BACKUP CODE ROUTES =====
+app.post("/api/verify-backup-code", async (req, res, next) => {
+  try {
+    const { username, code, isManager } = req.body;
+    
+    if (!username || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Username and code are required" 
+      });
+    }
+
+    const Model = isManager ? Manager : User;
+    const account = await Model.findOne({ username });
+
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Check if code exists in backup codes
+    const isValidCode = account.authData.backupCodes.includes(code);
+
+    if (isValidCode) {
+      return res.json({ 
+        success: true, 
+        message: "Backup code verified" 
+      });
+    } else {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Invalid backup code" 
+      });
+    }
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post("/api/mark-backup-code-used", async (req, res, next) => {
+  try {
+    const { username, code, isManager } = req.body;
+    
+    if (!username || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Username and code are required" 
+      });
+    }
+
+    const Model = isManager ? Manager : User;
+    const account = await Model.findOne({ username });
+
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Remove the used backup code
+    const updatedBackupCodes = account.authData.backupCodes.filter(c => c !== code);
+    
+    await Model.updateOne(
+      { username },
+      { $set: { "authData.backupCodes": updatedBackupCodes } }
+    );
+
+    res.json({ 
+      success: true, 
+      message: "Backup code marked as used" 
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ===== SECURITY KEY ROUTES =====
+app.post("/api/verify-security-key", async (req, res, next) => {
+  try {
+    const { username, key, keyType, isManager } = req.body;
+    
+    if (!username || !key || !keyType) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Missing required fields" 
+      });
+    }
+
+    const Model = isManager ? Manager : User;
+    const account = await Model.findOne({ username });
+
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Check the security key
+    const isValidKey = account.authData.securityKeys[keyType] === key;
+
+    if (isValidKey) {
+      return res.json({ 
+        success: true, 
+        message: "Security key verified" 
+      });
+    } else {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Invalid security key" 
+      });
+    }
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ===== AUTHENTICATOR MANAGEMENT ROUTES =====
+app.post("/api/activate-authenticator", async (req, res, next) => {
+  try {
+    const { username, isManager } = req.body;
+    
+    if (!username) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Username is required" 
+      });
+    }
+
+    // In a real application, you would implement actual activation logic here
+    // This is just a placeholder for the demonstration
+    
+    res.json({ 
+      success: true, 
+      message: "Authenticator activated successfully" 
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post("/api/deactivate-authenticator", async (req, res, next) => {
+  try {
+    const { username, isManager } = req.body;
+    
+    if (!username) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Username is required" 
+      });
+    }
+
+    // In a real application, you would implement actual deactivation logic here
+    // This is just a placeholder for the demonstration
+    
+    res.json({ 
+      success: true, 
+      message: "Authenticator deactivated successfully" 
+    });
 
   } catch (err) {
     next(err);
