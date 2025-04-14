@@ -137,21 +137,40 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
-function decrypt(encryptedData, aesKey, iv) {
+function decryptNFCData(encryptedBase64, aesKeyHex) {
   try {
-    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(aesKey, 'hex'), Buffer.from(iv, 'hex'));
-    let decrypted = decipher.update(encryptedData, "base64", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch (err) {
-    console.error("Decryption error:", err);
+    // Convert hex key to Buffer
+    const aesKey = Buffer.from(aesKeyHex, 'hex');
+    
+    // Decode the Base64 string
+    const combined = Buffer.from(encryptedBase64, 'base64');
+    
+    // Extract IV (first 16 bytes) and encrypted data
+    const iv = combined.slice(0, 16);
+    const encrypted = combined.slice(16);
+    
+    // Create decipher
+    const decipher = crypto.createDecipheriv('aes-256-cbc', aesKey, iv);
+    
+    // Decrypt and handle PKCS7 padding
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
+    // Remove PKCS7 padding
+    const padLength = decrypted[decrypted.length - 1];
+    decrypted = decrypted.slice(0, decrypted.length - padLength);
+    
+    return decrypted.toString('utf-8');
+  } catch (error) {
+    console.error('Decryption failed:', error);
     return null;
   }
 }
 
+// Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
   try {
-    const { encryptedData, serial, username, isManager, aesKey, expectedText } = req.body;
+    const { encryptedData, serial, username, isManager } = req.body;
     
     if (!encryptedData || !serial || !username) {
       return res.status(400).json({ 
@@ -170,12 +189,21 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
-    // Use the provided key or fall back to stored key
-    const decryptionKey = aesKey || account.authData.aesKey;
-    const expectedDecryptedText = expectedText || account.authData.expectedText;
-    
-    const iv = "0000000000000000"; // Should be dynamic in production
-    const decryptedText = decrypt(encryptedData, decryptionKey, iv);
+    // Normalize serial numbers for comparison
+    const normalizeSerial = (serial) => serial ? serial.replace(/:/g, "").toUpperCase() : "";
+    const normalizedInput = normalizeSerial(serial);
+    const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
+
+    // Serial number validation
+    if (normalizedInput !== normalizedAllowed) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Access denied: Invalid NFC device" 
+      });
+    }
+
+    // Perform decryption
+    const decryptedText = decryptNFCData(encryptedData, account.authData.aesKey);
 
     if (!decryptedText) {
       return res.status(400).json({ 
@@ -184,12 +212,8 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       });
     }
 
-    // Normalize serial numbers for comparison
-    const normalizeSerial = (serial) => serial ? serial.replace(/:/g, "").toUpperCase() : "";
-    const normalizedInput = normalizeSerial(serial);
-    const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
-
-    if (decryptedText === expectedDecryptedText && normalizedInput === normalizedAllowed) {
+    // Verify decrypted text matches expected text
+    if (decryptedText === account.authData.expectedText) {
       return res.json({ 
         success: true, 
         message: "Access granted" 
@@ -197,7 +221,7 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     } else {
       return res.status(403).json({ 
         success: false, 
-        message: "Access denied" 
+        message: "Access denied: Invalid NFC data" 
       });
     }
 
