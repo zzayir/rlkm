@@ -138,8 +138,6 @@ app.post("/manager-login", async (req, res, next) => {
 
 // ===== NFC AUTHENTICATION ROUTE =====
 
-const crypto = require('crypto');
-
 // Optimized decryption function
 function decryptNFCData(encryptedBase64, aesKeyHex) {
   try {
