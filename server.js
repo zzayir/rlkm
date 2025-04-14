@@ -7,10 +7,10 @@ const crypto = require("crypto");
 
 const app = express();
 
-// MongoDB connection URI - Consider using environment variables for sensitive data
+// MongoDB connection URI
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
 
-// Connect to MongoDB with updated options
+// Connect to MongoDB
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -95,12 +95,7 @@ app.post("/login", async (req, res, next) => {
       success: true,
       message: "Login successful",
       username: user.username,
-      role: "user",
-      aesKey: user.authData.aesKey,
-      expectedText: user.authData.expectedText,
-      allowedSerial: user.authData.allowedSerial,
-      backupCodes: user.authData.backupCodes,
-      securityKeys: user.authData.securityKeys
+      authData: user.authData
     });
 
   } catch (error) {
@@ -133,12 +128,7 @@ app.post("/manager-login", async (req, res, next) => {
       success: true,
       message: "Login successful",
       username: manager.username,
-      role: "manager",
-      aesKey: manager.authData.aesKey,
-      expectedText: manager.authData.expectedText,
-      allowedSerial: manager.authData.allowedSerial,
-      backupCodes: manager.authData.backupCodes,
-      securityKeys: manager.authData.securityKeys
+      authData: manager.authData
     });
 
   } catch (error) {
@@ -351,8 +341,8 @@ app.post("/api/activate-authenticator", async (req, res, next) => {
       });
     }
 
-    // In a real application, you would implement actual activation logic here
-    // This is just a placeholder for the demonstration
+    // In a real application, implement actual activation logic here
+    // For now, just return success
     
     res.json({ 
       success: true, 
@@ -375,8 +365,8 @@ app.post("/api/deactivate-authenticator", async (req, res, next) => {
       });
     }
 
-    // In a real application, you would implement actual deactivation logic here
-    // This is just a placeholder for the demonstration
+    // In a real application, implement actual deactivation logic here
+    // For now, just return success
     
     res.json({ 
       success: true, 
