@@ -169,70 +169,60 @@ function decryptNFCData(encryptedBase64, aesKeyHex) {
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
-    console.log("Request received for NFC Auth", req.body);
+  console.log("Request received for NFC Auth", req.body);
+
   try {
     const { encryptedData, serial, username, isManager } = req.body;
-    
+
     if (!encryptedData || !serial || !username) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Missing required fields" 
-      });
+      console.log("❌ Missing required fields");
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
     const Model = isManager ? Manager : User;
     const account = await Model.findOne({ username });
 
     if (!account) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
+      console.log("❌ User not found");
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Normalize serial numbers for comparison
-    const normalizeSerial = (serial) => serial ? serial.replace(/:/g, "").toUpperCase() : "";
-    const normalizedInput = normalizeSerial(serial);
-    const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
+    const normalizeSerial = (s) => s ? s.replace(/:/g, "").toUpperCase() : "";
+    const inputSerial = normalizeSerial(serial);
+    const storedSerial = normalizeSerial(account.authData.allowedSerial);
 
-    // Serial number validation
-    if (normalizedInput !== normalizedAllowed) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Access denied: Invalid NFC device" 
-      });
+    console.log("Input Serial:", inputSerial);
+    console.log("Stored Serial:", storedSerial);
+
+    if (inputSerial !== storedSerial) {
+      console.log("❌ Invalid Serial Number");
+      return res.status(403).json({ success: false, message: "Access denied: Invalid NFC device" });
     }
 
-    // Perform decryption
     const decryptedText = decryptNFCData(encryptedData, account.authData.aesKey);
 
-    console.log("Decrypted NFC Text:", decryptedText); // Log decrypted text
-    console.log("Expected Text:", account.authData.expectedText); // Log expected text
-    
+    console.log("🔓 Decrypted NFC Text:", decryptedText);
+    console.log("✅ Expected Text:", account.authData.expectedText);
+
     if (!decryptedText) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Decryption failed" 
-      });
+      console.log("❌ Decryption failed");
+      return res.status(400).json({ success: false, message: "Decryption failed" });
     }
 
-    // Verify decrypted text matches expected text
     if (decryptedText === account.authData.expectedText) {
-      return res.json({ 
-        success: true, 
-        message: "Access granted" 
-      });
+      console.log("✅ Access Granted");
+      return res.json({ success: true, message: "Access granted" });
     } else {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Access denied: Invalid NFC data" 
-      });
+      console.log("❌ Access Denied: Text Mismatch");
+      return res.status(403).json({ success: false, message: "Access denied: Invalid NFC data" });
     }
 
   } catch (err) {
+    console.error("🔥 Server Error:", err);
     next(err);
   }
 });
+
 
 // ===== BACKUP CODE ROUTES =====
 app.post("/api/verify-backup-code", async (req, res, next) => {
