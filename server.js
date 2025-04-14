@@ -197,8 +197,8 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     const normalizedInput = normalizeSerial(serial);
     const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
 
-     console.log("Input Serial:", inputSerial);
-    console.log("Stored Serial:", storedSerial);
+     console.log("Input Serial:", normalizedInput);
+    console.log("Stored Serial:", normalizedAllowed);
 
     // Serial number validation
     if (normalizedInput !== normalizedAllowed) {
