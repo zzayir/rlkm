@@ -205,6 +205,9 @@ app.post("/api/nfc-auth", async (req, res, next) => {
     // Perform decryption
     const decryptedText = decryptNFCData(encryptedData, account.authData.aesKey);
 
+    console.log("Decrypted NFC Text:", decryptedText); // Log decrypted text
+    console.log("Expected Text:", account.authData.expectedText); // Log expected text
+    
     if (!decryptedText) {
       return res.status(400).json({ 
         success: false, 
