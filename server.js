@@ -5,10 +5,6 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 
-function hexToBuffer(hexString) {
-  return Buffer.from(hexString, 'hex');
-}
-const keyBuffer = hexToBuffer(aesKey);
 
 const app = express();
 
@@ -172,6 +168,11 @@ console.log("🔓 Decrypted result:", result);
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
+  
+  const { aesKey, encryptedData } = req.body;
+  const keyBuffer = Buffer.from(aesKey, 'hex');
+  const decryptedText = decryptNFCData(encryptedData, keyBuffer);
+  
   console.log("Request received for NFC Auth", req.body);
   try {
     const { encryptedData, serial, username, isManager } = req.body;
