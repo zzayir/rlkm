@@ -211,7 +211,7 @@ async function processNFCCard(encryptedBase64, serialNumber) {
         username: CURRENT_USERNAME,
         aesKey: USER_AES_KEY,
         expectedText: USER_EXPECTED_TEXT,
-        isManager: false // Adjust based on user type
+        isManager: true // Adjust based on user type
       })
     });
 
