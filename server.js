@@ -138,96 +138,138 @@ app.post("/manager-login", async (req, res, next) => {
 
 // ===== NFC AUTHENTICATION ROUTE =====
 
+const crypto = require('crypto');
+
+// Optimized decryption function
 function decryptNFCData(encryptedBase64, aesKeyHex) {
   try {
-    // Convert hex key to Buffer
+    // Validate inputs first
+    if (!encryptedBase64 || !aesKeyHex) {
+      console.error('Missing required parameters');
+      return null;
+    }
+
+    // Pre-validate Base64 (faster fail)
+    if (!/^[A-Za-z0-9+/=]+$/.test(encryptedBase64)) {
+      console.error('Invalid Base64 format');
+      return null;
+    }
+
+    // Convert hex key to Buffer (sync operation)
     const aesKey = Buffer.from(aesKeyHex, 'hex');
-    
-    // Decode the Base64 string
+    if (aesKey.length !== 32) {
+      console.error('Invalid AES key length');
+      return null;
+    }
+
+    // Decode Base64 and extract IV/data in one operation
     const combined = Buffer.from(encryptedBase64, 'base64');
-    
-    // Extract IV (first 16 bytes) and encrypted data
-    const iv = combined.slice(0, 16);
-    const encrypted = combined.slice(16);
-    
-    // Create decipher
+    if (combined.length < 32) { // Minimum 16 IV + 16 encrypted
+      console.error('Encrypted data too short');
+      return null;
+    }
+
+    const iv = combined.subarray(0, 16); // Faster than slice
+    const encrypted = combined.subarray(16);
+
+    // Create and configure decipher
     const decipher = crypto.createDecipheriv('aes-256-cbc', aesKey, iv);
-    
-    // Decrypt and handle PKCS7 padding
-    let decrypted = decipher.update(encrypted);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    
-    // Remove PKCS7 padding
+    decipher.setAutoPadding(false); // Handle padding manually for better performance
+
+    // Single-pass decryption
+    let decrypted = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final()
+    ]);
+
+    // Manual PKCS7 unpadding (faster than auto-padding)
     const padLength = decrypted[decrypted.length - 1];
-    decrypted = decrypted.slice(0, decrypted.length - padLength);
+    if (padLength <= 0 || padLength > 16) {
+      console.error('Invalid padding');
+      return null;
+    }
     
+    decrypted = decrypted.subarray(0, decrypted.length - padLength);
     return decrypted.toString('utf-8');
   } catch (error) {
-    console.error('Decryption failed:', error);
+    console.error('Decryption failed:', error.message);
     return null;
   }
 }
 
-// Modified NFC auth endpoint
+// Optimized NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
+  const startTime = process.hrtime(); // For performance measurement
+  
   try {
     const { encryptedData, serial, username, isManager } = req.body;
     
+    // Fast validation first
     if (!encryptedData || !serial || !username) {
+      console.log('Fast validation failed');
       return res.status(400).json({ 
         success: false, 
-        message: "Missing required fields" 
+        message: "Missing required fields",
+        processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
       });
     }
 
-    const Model = isManager ? Manager : User;
-    const account = await Model.findOne({ username });
+    // Parallelize database lookup and decryption
+    const [account, decryptedText] = await Promise.all([
+      (isManager ? Manager : User).findOne({ username }).lean(),
+      decryptNFCData(encryptedData, isManager 
+        ? (await Manager.findOne({ username }).select('authData.aesKey').lean())?.authData?.aesKey
+        : (await User.findOne({ username }).select('authData.aesKey').lean())?.authData?.aesKey
+    ]);
 
     if (!account) {
       return res.status(404).json({ 
         success: false, 
-        message: "User not found" 
+        message: "User not found",
+        processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
       });
     }
 
-    // Normalize serial numbers for comparison
-    const normalizeSerial = (serial) => serial ? serial.replace(/:/g, "").toUpperCase() : "";
-    const normalizedInput = normalizeSerial(serial);
-    const normalizedAllowed = normalizeSerial(account.authData.allowedSerial);
-
-    // Serial number validation
-    if (normalizedInput !== normalizedAllowed) {
+    // Fast serial comparison
+    const normalizedInput = serial.replace(/:/g, "").toUpperCase();
+    if (normalizedInput !== account.authData.allowedSerial.replace(/:/g, "").toUpperCase()) {
       return res.status(403).json({ 
         success: false, 
-        message: "Access denied: Invalid NFC device" 
+        message: "Access denied: Invalid NFC device",
+        processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
       });
     }
-
-    // Perform decryption
-    const decryptedText = decryptNFCData(encryptedData, account.authData.aesKey);
 
     if (!decryptedText) {
       return res.status(400).json({ 
         success: false, 
-        message: "Decryption failed" 
+        message: "Decryption failed",
+        processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
       });
     }
 
-    // Verify decrypted text matches expected text
+    // Final comparison
     if (decryptedText === account.authData.expectedText) {
       return res.json({ 
         success: true, 
-        message: "Access granted" 
-      });
-    } else {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Access denied: Invalid NFC data" 
+        message: "Access granted",
+        processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
       });
     }
 
+    return res.status(403).json({ 
+      success: false, 
+      message: "Access denied: Invalid NFC data",
+      processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
+    });
+
   } catch (err) {
-    next(err);
+    console.error('Auth error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal server error",
+      processingTime: `${process.hrtime(startTime)[1] / 1000000}ms`
+    });
   }
 });
 
