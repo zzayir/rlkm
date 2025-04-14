@@ -5,6 +5,11 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 
+function hexToBuffer(hexString) {
+  return Buffer.from(hexString, 'hex');
+}
+const keyBuffer = hexToBuffer(aesKey);
+
 const app = express();
 
 // MongoDB connection URI
@@ -137,35 +142,34 @@ app.post("/manager-login", async (req, res, next) => {
 });
 
 // ===== NFC AUTHENTICATION ROUTE =====
+const crypto = require('crypto');
+
 function decryptNFCData(encryptedBase64, aesKeyHex) {
   try {
-    // Convert hex key to Buffer
     const aesKey = Buffer.from(aesKeyHex, 'hex');
-    
-    // Decode the Base64 string
     const combined = Buffer.from(encryptedBase64, 'base64');
-    
-    // Extract IV (first 16 bytes) and encrypted data
     const iv = combined.slice(0, 16);
     const encrypted = combined.slice(16);
-    
-    // Create decipher
+
     const decipher = crypto.createDecipheriv('aes-256-cbc', aesKey, iv);
-    
-    // Decrypt and handle PKCS7 padding
+    decipher.setAutoPadding(true); // Let Node.js handle PKCS7
+
     let decrypted = decipher.update(encrypted);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
-    
-    // Remove PKCS7 padding
-    const padLength = decrypted[decrypted.length - 1];
-    decrypted = decrypted.slice(0, decrypted.length - padLength);
-    
+
     return decrypted.toString('utf-8');
   } catch (error) {
-    console.error('Decryption failed:', error);
+    console.error('❌ Decryption failed:', error.message);
     return null;
   }
 }
+
+const aesKey = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+const base64 = "LugX+FknR9fzuScBdq1/M6jyvvHvqcL1A4umZ8bOBSY=";
+
+const result = decryptNFCData(base64, aesKey);
+console.log("🔓 Decrypted result:", result);
+
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
