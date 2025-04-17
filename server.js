@@ -46,13 +46,13 @@ const managerSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   authData: {
-    aesKey: { type: String, required: true },
-    expectedText: { type: String, required: true },
-    allowedSerial: { type: String, required: true },
-    backupCodes: [{ type: String, required: true }],
+    aesKey: { type: String},
+    expectedText: { type: String },
+    allowedSerial: { type: String },
+    backupCodes: [{ type: String}],
     securityKeys: {
-      deactivateKey: { type: String, required: true },
-      activateKey: { type: String, required: true }
+      deactivateKey: { type: String },
+      activateKey: { type: String}
     }
   }
 });
