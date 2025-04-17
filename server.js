@@ -159,12 +159,6 @@ function decryptNFCData(encryptedBase64, aesKeyHex) {
   }
 }
 
-const aesKey = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-const base64 = "LugX+FknR9fzuScBdq1/M6jyvvHvqcL1A4umZ8bOBSY=";
-
-const result = decryptNFCData(base64, aesKey);
-console.log("🔓 Decrypted result:", result);
-
 
 // Modified NFC auth endpoint
 app.post("/api/nfc-auth", async (req, res, next) => {
