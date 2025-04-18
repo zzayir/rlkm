@@ -195,7 +195,6 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   const normalizedSerial = normalizeSerialNumber(serialNumber);
   const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
 
-  // Serial number validation
   if (normalizedSerial !== normalizedAllowed) {
     statusEl.textContent = `❌ Access Denied: Invalid card (Serial: ${serialNumber || 'unknown'})`;
     scanBtn.disabled = false;
@@ -203,17 +202,6 @@ async function processNFCCard(encryptedBase64, serialNumber) {
   }
 
   try {
-    // Debug: Log the values being sent
-    console.log("Sending to /api/nfc-auth:", {
-      encryptedData: encryptedBase64,
-      serial: serialNumber,
-      username: CURRENT_USERNAME,
-      aesKey: USER_AES_KEY,
-      expectedText: USER_EXPECTED_TEXT,
-      isManager: false // This is the key difference from manager auth
-    });
-
-    // Send the encrypted NFC data to the server for authentication
     const res = await fetch("/api/nfc-auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -223,22 +211,21 @@ async function processNFCCard(encryptedBase64, serialNumber) {
         username: CURRENT_USERNAME,
         aesKey: USER_AES_KEY,
         expectedText: USER_EXPECTED_TEXT,
-        isManager: false // Make sure this is false for regular users
+        isManager: USER_IS_MANAGER // Use a variable that correctly identifies manager status
       })
     });
 
     const data = await res.json();
     
-    if (!res.ok) {
-      throw new Error(data.message || "Authentication failed");
-    }
+    if (!res.ok) throw new Error(data.message || "Authentication failed");
 
     if (data.success) {
       statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
       setTimeout(() => {
-       const redirectUrl = data.isManager ? "employee.html" : "home.html";
-    window.location.href = redirectUrl;
-  }, 1000);
+        // Use server-provided role if available, fallback to client-side variable
+        const isManager = data.isManager !== undefined ? data.isManager : USER_IS_MANAGER;
+        window.location.href = isManager ? "employee.html" : "home.html";
+      }, 1000);
     } else {
       statusEl.textContent = data.message || "Authentication failed";
       scanBtn.disabled = false;
@@ -249,7 +236,6 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     scanBtn.disabled = false;
   }
 }
-
 
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
