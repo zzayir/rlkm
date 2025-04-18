@@ -236,8 +236,9 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     if (data.success) {
       statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
       setTimeout(() => {
-        window.location.href = "home.html";
-      }, 1000);
+       const redirectUrl = data.isManager ? "employee.html" : "home.html";
+    window.location.href = redirectUrl;
+  }, 1000);
     } else {
       statusEl.textContent = data.message || "Authentication failed";
       scanBtn.disabled = false;
