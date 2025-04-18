@@ -34,6 +34,11 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
     alert(data.message);
 
     if (data.message === "Login successful") {
+      // Ensure authData exists and has required fields
+      if (!data.authData || !data.authData.aesKey || !data.authData.expectedText) {
+        throw new Error("Missing authentication data in response");
+      }
+
       // Store all authentication data from the database
       USER_AES_KEY = data.authData.aesKey;
       USER_EXPECTED_TEXT = data.authData.expectedText;
@@ -41,6 +46,12 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
       CURRENT_USERNAME = data.username;
       USER_BACKUP_CODES = data.authData.backupCodes || [];
       USER_SECURITY_KEYS = data.authData.securityKeys || {};
+      
+      console.log("Auth data loaded:", { 
+        aesKey: USER_AES_KEY, 
+        expectedText: USER_EXPECTED_TEXT,
+        serial: USER_ALLOWED_SERIAL
+      });
       
       showNFCAuth();
     }
@@ -176,57 +187,68 @@ return serial ? serial.toUpperCase() : "";
 }
 
 async function processNFCCard(encryptedBase64, serialNumber) {
-const statusEl = document.getElementById("nfcStatus");
-const scanBtn = document.getElementById("nfcScanBtn");
+  const statusEl = document.getElementById("nfcStatus");
+  const scanBtn = document.getElementById("nfcScanBtn");
 
-if (!statusEl || !scanBtn) return;
+  if (!statusEl || !scanBtn) return;
 
-const normalizedSerial = normalizeSerialNumber(serialNumber);
-const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
+  const normalizedSerial = normalizeSerialNumber(serialNumber);
+  const normalizedAllowed = normalizeSerialNumber(USER_ALLOWED_SERIAL);
 
-// Serial number validation
-if (normalizedSerial !== normalizedAllowed) {
-  statusEl.textContent = `❌ Access Denied: Invalid card (Serial: ${serialNumber || 'unknown'})`;
-  scanBtn.disabled = false;
-  return;
-}
+  // Serial number validation
+  if (normalizedSerial !== normalizedAllowed) {
+    statusEl.textContent = `❌ Access Denied: Invalid card (Serial: ${serialNumber || 'unknown'})`;
+    scanBtn.disabled = false;
+    return;
+  }
 
-try {
-  // Send the encrypted NFC data to the server for authentication
-  const res = await fetch("/api/nfc-auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  try {
+    // Debug: Log the values being sent
+    console.log("Sending to /api/nfc-auth:", {
       encryptedData: encryptedBase64,
       serial: serialNumber,
       username: CURRENT_USERNAME,
       aesKey: USER_AES_KEY,
       expectedText: USER_EXPECTED_TEXT,
-      isManager: true // Adjust based on user type
-    })
-  });
+      isManager: false // This is the key difference from manager auth
+    });
 
-  const data = await res.json();
-  
-  if (!res.ok) {
-    throw new Error(data.message || "Authentication failed");
-  }
+    // Send the encrypted NFC data to the server for authentication
+    const res = await fetch("/api/nfc-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        encryptedData: encryptedBase64,
+        serial: serialNumber,
+        username: CURRENT_USERNAME,
+        aesKey: USER_AES_KEY,
+        expectedText: USER_EXPECTED_TEXT,
+        isManager: false // Make sure this is false for regular users
+      })
+    });
 
-  if (data.success) {
-    statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
-    setTimeout(() => {
-      window.location.href = "home.html";
-    }, 1000);
-  } else {
-    statusEl.textContent = data.message || "Authentication failed";
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || "Authentication failed");
+    }
+
+    if (data.success) {
+      statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
+      setTimeout(() => {
+        window.location.href = "home.html";
+      }, 1000);
+    } else {
+      statusEl.textContent = data.message || "Authentication failed";
+      scanBtn.disabled = false;
+    }
+  } catch (err) {
+    console.error("Authentication error:", err);
+    statusEl.textContent = "❌ Security verification failed";
     scanBtn.disabled = false;
   }
-} catch (err) {
-  console.error("Authentication error:", err);
-  statusEl.textContent = "❌ Security verification failed";
-  scanBtn.disabled = false;
 }
-}
+
 
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
