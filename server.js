@@ -4,9 +4,19 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
-
-
 const app = express();
+app.use(express.json()); // This is required to parse JSON data
+const cors = require('cors');
+app.use(cors());
+const twilio = require('twilio');
+
+
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+
+require('dotenv').config();
 
 // MongoDB connection URI
 const mongoURI = "mongodb+srv://zzayir21:rifah5657@cluster21.7c8bhzd.mongodb.net/loginDB?retryWrites=true&w=majority";
@@ -415,6 +425,82 @@ app.post("/api/deactivate-authenticator", async (req, res, next) => {
     next(err);
   }
 });
+
+// ALLOGIN OTP CODE START
+const otpStore = {};
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Route to send OTP
+app.post('/send-otp', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user || user.password !== password) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const otp = generateOTP();
+    const phone = '+919344211992';
+
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    await client.messages.create({
+      body: `Your OTP is: ${otp}`,
+      from: process.env.TWILIO_PHONE,
+      to: phone
+    });
+
+    otpStore[phone] = {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+    };
+
+    console.log(`✅ OTP sent to ${phone}: ${otp}`);
+    res.json({ success: true, message: 'OTP sent successfully' });
+
+  } catch (error) {
+    console.error('❌ Error sending OTP:', error);
+    res.status(500).json({ success: false, message: 'OTP failed to send' });
+  }
+});
+
+// Route to verify OTP
+app.post('/verify-otp', async (req, res) => {
+  const { username, otp } = req.body;
+
+  try {
+    if (!username || !otp) {
+      return res.status(400).json({ valid: false, message: 'Username and OTP are required' });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ valid: false, message: 'User not found' });
+    }
+
+    const phone = '+919344211992'; // Replace with user's phone number
+    const record = otpStore[phone];
+
+    if (!record) {
+      return res.status(400).json({ valid: false, message: 'No OTP sent to this number' });
+    }
+
+    if (record.otp === otp && Date.now() < record.expiresAt) {
+      delete otpStore[phone]; // OTP is one-time
+      return res.json({ valid: true, message: 'OTP verified' });
+    }
+    
+
+    return res.status(400).json({ valid: false, message: 'Invalid or expired OTP' });
+
+  } catch (error) {
+    console.error('❌ Error verifying OTP:', error);
+    res.status(500).json({ valid: false, message: 'Server error during OTP verification' });
+  }
+});
+
+
+// ALLOGIN OTP CODE END
 
 // ====== HELPER: Get Local IP ======
 function getLocalIP() {
