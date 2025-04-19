@@ -189,48 +189,15 @@
 </head>
 <body>
     <div class="logo-container">
-        <img src="./img/creslogo.png" alt="Crescent Bank Logo" class="logo">
-        <div class="welcome-text">Crescent Bank of India</div>
+        <img src="./img/creslogo.png" alt="Logo" class="logo">
     </div>
 
-    <div class="login-container">
-        <div class="login-box">
-            <h2 class="login-title">Employee Login</h2>
-            <form class="login-form" action="dashboard.html" method="POST">
-                <div class="form-group">
-                    <label for="username">Employee ID</label>
-                    <input type="text" id="username" name="username" placeholder="Enter your employee ID" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-                <a href="#" class="forgot-password">Forgot Password?</a>
-            </form>
-        </div>
-    </div>
 
     <script>
-        // Add some interactive effects
-        document.querySelectorAll('.form-group input').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentNode.querySelector('label').style.color = 'var(--primary)';
-            });
-            
-            input.addEventListener('blur', function() {
-                if (!this.value) {
-                    this.parentNode.querySelector('label').style.color = 'var(--text)';
-                }
-            });
-        });
-
-        // Form submission handling (prevent default for demo)
-        document.querySelector('.login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // In a real app, you would handle the login here
-            window.location.href = "dashboard.html";
-        });
+        // If you want to actually redirect to login.html after animations
+        setTimeout(() => {
+        window.location.href = "login.html";
+        }, 3500);
     </script>
 </body>
 </html>
