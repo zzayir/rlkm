@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Registration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #3f37c9;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4cc9f0;
+      --danger: #f72585;
+      --warning: #f8961e;
+      --border-radius: 12px;
+      --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: var(--dark);
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      padding: 30px 0;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    }
+
+    .logo-ring {
+      width: 80px;
+      height: 80px;
+      border: 5px solid white;
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s infinite;
+    }
+
+    .logo-ring::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 5px solid rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      animation: pulse 2s infinite 0.5s;
+    }
+
+    .logo-ring::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      top: -20px;
+      left: -20px;
+      right: -20px;
+      bottom: -20px;
+      animation: pulse 2s infinite 1s;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .step-container {
+      padding: 30px;
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .step-container.active {
+      display: block;
+    }
+
+    h2 {
+      color: var(--primary);
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      transition: var(--transition);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(67, 97, 238, 0.1);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: #e5177a;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: var(--border-radius);
+      margin-top: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error {
+      background: rgba(247, 37, 133, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(247, 37, 133, 0.3);
+      display: block;
+    }
+
+    .success {
+      background: rgba(76, 201, 240, 0.1);
+      color: #0a9396;
+      border: 1px solid rgba(76, 201, 240, 0.3);
+      display: block;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    .mobile-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    .mobile-input select {
+      flex: 0 0 100px;
+    }
+
+    .mobile-input input {
+      flex: 1;
+    }
+
+    .nfc-animation {
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .nfc-icon {
+      font-size: 60px;
+      color: var(--primary);
+      margin-bottom: 20px;
+      animation: nfcScan 2s infinite;
+    }
+
+    @keyframes nfcScan {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .final-message {
+      text-align: center;
+      padding: 30px 0;
+    }
+
+    .final-message .checkmark {
+      font-size: 80px;
+      color: #4bb543;
+      margin-bottom: 20px;
+      animation: checkmarkScale 0.5s ease;
+    }
+
+    @keyframes checkmarkScale {
+      0% {
+        transform: scale(0);
+      }
+      80% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .final-message h3 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+
+    .final-message p {
+      margin-bottom: 30px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        max-width: 100%;
+      }
+      
+      .mobile-input {
+        flex-direction: column;
+      }
+      
+      .mobile-input select {
+        flex: 1;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <div class="logo-ring"></div>
+    </div>
+    
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- Step 1: Basic Info -->
+    <div class="step-container active" id="step1">
+      <h2>Create Your Account</h2>
+      
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Create a password" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+      </div>
+      
+      <button class="btn" onclick="checkStep1()">Continue</button>
+      
+      <div class="message" id="message"></div>
+    </div>
+
+    <!-- Step 2: Mobile & OTP -->
+    <div class="step-container" id="step2">
+      <h2>Mobile Verification</h2>
+      
+      <div class="form-group">
+        <label for="mobile">Mobile Number</label>
+        <div class="mobile-input">
+          <select id="countryCode"></select>
+          <input type="text" id="mobile" placeholder="Enter mobile number" required>
+        </div>
+      </div>
+      
+      <button class="btn" onclick="sendOTP()">Send Verification Code</button>
+      
+      <div class="form-group hidden" id="otp-group">
+        <label for="otp">Verification Code</label>
+        <input type="text" id="otp" placeholder="Enter 6-digit code">
+        <button class="btn" onclick="verifyOTP()" id="verifyBtn">Verify Code</button>
+      </div>
+      
+      <button class="btn btn-secondary" onclick="skipOTP()">Skip Verification</button>
+      
+      <div class="message" id="otpMsg"></div>
+    </div>
+
+    <!-- Step 3: NFC Prompt -->
+    <div class="step-container" id="step3">
+      <h2>Enhanced Security</h2>
+      
+      <div class="nfc-animation">
+        <div class="nfc-icon">⏣</div>
+        <p>Add an extra layer of security with NFC authentication</p>
+      </div>
+      
+      <div class="btn-group">
+        <button class="btn" onclick="handleNFCChoice(true)">Enable NFC</button>
+        <button class="btn btn-secondary" onclick="handleNFCChoice(false)">Skip for Now</button>
+      </div>
+    </div>
+
+    <!-- Step 4: NFC Auth -->
+    <div class="step-container" id="step4">
+      <h2>Register NFC Tag</h2>
+      
+      <div class="nfc-animation">
+        <div class="nfc-icon">⏣</div>
+        <p>Hold your NFC tag near your device to register it</p>
+      </div>
+      
+      <button class="btn" onclick="scanNFC()">Scan NFC Tag</button>
+      <button class="btn btn-secondary hidden" id="proceedWithoutNfcBtn" onclick="proceedWithoutNfc()">Proceed Without NFC</button>
+      
+      <div class="message" id="nfc-status"></div>
+    </div>
+
+    <!-- Final Step -->
+    <div class="step-container" id="final">
+      <div class="final-message">
+        <div class="checkmark">✓</div>
+        <h3>Registration Complete!</h3>
+        <p>Your account has been successfully created.</p>
+        
+        <div class="btn-group">
+          <button class="btn" onclick="location.href='employee.html'">Go to Dashboard</button>
+          <button class="btn btn-secondary" onclick="history.back()">Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Update progress bar
+    function updateProgress(step) {
+      const progress = document.getElementById('progress');
+      const percentages = [0, 25, 50, 75, 100];
+      progress.style.width = `${percentages[step]}%`;
+    }
+
+    // Helper functions
+    function showError(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = 'message error';
+    }
+
+    function showSuccess(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = 'message success';
+    }
+
+    function clearError(elementId) {
+      const element = document.getElementById(elementId);
+      element.textContent = '';
+      element.className = 'message';
+    }
+
+    function nextSection(sectionId) {
+      document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
+      
+      // Update progress based on section
+      const sections = ['step1', 'step2', 'step3', 'step4', 'final'];
+      const step = sections.indexOf(sectionId);
+      updateProgress(step);
+    }
+
+    // Populate country codes
+fetch('https://restcountries.com/v3.1/all')
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to load country codes');
+      return res.json();
+    })
+    .then(data => {
+      const select = document.getElementById('countryCode');
+      data.sort((a, b) => a.name.common.localeCompare(b.name.common)).forEach(country => {
+        const root = country.idd?.root || '';
+        const suffix = country.idd?.suffixes ? country.idd.suffixes[0] : '';
+        const option = document.createElement('option');
+        option.value = root + suffix;
+        option.textContent = `${country.name.common} (${option.value})`;
+        select.appendChild(option);
+      });
+    })
+    .catch(err => {
+      console.error('Error loading country codes:', err);
+      // Fallback to some default options
+      const select = document.getElementById('countryCode');
+      const option = document.createElement('option');
+      option.value = '+1';
+      option.textContent = 'United States (+1)';
+      select.appendChild(option);
+    });
+
+    // Step 1 check
+    function checkStep1() {
+      clearError('message');
+      
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (!username || !email || !password || !confirmPassword) {
+        showError('message', 'All fields are required');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('message', 'Passwords do not match');
+        return;
+      }
+
+      if (password.length < 8) {
+        showError('message', 'Password must be at least 8 characters');
+        return;
+      }
+
+      // Simple email validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('message', 'Please enter a valid email address');
+        return;
+      }
+
+      // Show loading state
+      const btn = document.querySelector('#step1 .btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner">Checking...</span>';
+
+      fetch('/api/check-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Username check failed');
+        return res.json();
+      })
+      .then(data => {
+        if (!data.available) {
+          showError('message', 'Username is not available');
+          btn.disabled = false;
+          btn.textContent = 'Continue';
+        } else {
+          nextSection('step2');
+        }
+      })
+      .catch(err => {
+        console.error('Error checking username:', err);
+        showError('message', 'Error checking username availability');
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+      });
+    }
+
+    let fullNumber;
+
+    function sendOTP() {
+      clearError('otpMsg');
+      
+      const mobile = document.getElementById('mobile').value.trim();
+      const code = document.getElementById('countryCode').value;
+      
+      if (!mobile) {
+        showError('otpMsg', 'Mobile number is required');
+        return;
+      }
+
+      fullNumber = code + mobile;
+
+      // Show loading state
+      const btn = document.querySelector('#step2 .btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: fullNumber })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to send OTP');
+        return res.json();
+      })
+      .then(() => {
+        document.getElementById('otp-group').classList.remove('hidden');
+        showSuccess('otpMsg', 'Verification code sent successfully');
+        btn.disabled = false;
+        btn.textContent = 'Resend Code';
+      })
+      .catch(err => {
+        console.error('Error sending OTP:', err);
+        showError('otpMsg', 'Failed to send verification code');
+        btn.disabled = false;
+        btn.textContent = 'Send Verification Code';
+      });
+    }
+
+    function verifyOTP() {
+      const otp = document.getElementById('otp').value.trim();
+      
+      if (!otp) {
+        showError('otpMsg', 'Verification code is required');
+        return;
+      }
+
+      // Show loading state
+      const btn = document.getElementById('verifyBtn');
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: fullNumber, otp })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('OTP verification failed');
+        return res.json();
+      })
+      .then(data => {
+        if (data.verified) {
+          nextSection('step3');
+        } else {
+          showError('otpMsg', 'Incorrect verification code');
+          btn.disabled = false;
+          btn.textContent = 'Verify Code';
+        }
+      })
+      .catch(err => {
+        console.error('Error verifying OTP:', err);
+        showError('otpMsg', 'Error verifying code');
+        btn.disabled = false;
+        btn.textContent = 'Verify Code';
+      });
+    }
+
+    function skipOTP() {
+      const mobile = document.getElementById('mobile').value.trim();
+      const code = document.getElementById('countryCode').value;
+      
+      if (!mobile) {
+        showError('otpMsg', 'Mobile number is required');
+        return;
+      }
+
+      fullNumber = code + mobile;
+      nextSection("step3");
+    }
+
+    function handleNFCChoice(wantsNFC) {
+      if (wantsNFC) {
+        if ('NDEFReader' in window) {
+          nextSection("step4");
+        } else {
+          document.getElementById('nfc-status').textContent = 'Your device doesn\'t support NFC.';
+          document.getElementById('proceedWithoutNfcBtn').classList.remove('hidden');
+        }
+      } else {
+        proceedWithoutNfc();
+      }
+    }
+
+    function proceedWithoutNfc() {
+      const data = {
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        mobileNumber: fullNumber,
+        authData: null
+      };
+
+      // Show loading state
+      const btn = document.querySelector('#step4 .btn') || document.querySelector('#step3 .btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+      }
+
+      fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Registration failed');
+        nextSection('final');
+      })
+      .catch(err => {
+        console.error("Registration error:", err);
+        showError('nfc-status', 'Error: ' + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Scan NFC Tag';
+        }
+      });
+    }
+
+    // NFC Functions
+async function scanNFC() {
+  const nfcStatus = document.getElementById('nfc-status');
+  const scanBtn = document.querySelector('#step4 button'); // The scan button in step4
+
+  try {
+    // Check NFC support
+    if (!('NDEFReader' in window)) {
+      nfcStatus.textContent = "Your device doesn't support NFC. Please proceed without NFC.";
+      document.getElementById('proceedWithoutNfcBtn').style.display = 'block';
+      return;
+    }
+
+    const ndef = new NDEFReader();
+    nfcStatus.textContent = 'Ready to scan...';
+    scanBtn.disabled = true;
+
+    await ndef.scan();
+
+    ndef.onreading = async (event) => {
+      try {
+        // Use raw serial number (Uint8Array)
+        const rawSerial = event.serialNumber;
+        
+        if (!rawSerial || rawSerial.length === 0) {
+          nfcStatus.textContent = "⚠️ Serial number not detected. Try a different tag.";
+          scanBtn.disabled = false;
+          return;
+        }
+
+
+        // Generate unique expected text
+        const uniqueExpectedText = "ACCESS_" + 
+          Math.random().toString(36).substring(2, 8).toUpperCase() + 
+          "_GRANTED";
+        
+        const aesKey = generateRandomHex(32);
+        const encryptedText = await encryptText(uniqueExpectedText, aesKey);
+
+        // Write to NFC tag
+        await ndef.write({
+          records: [{
+            recordType: "text",
+            data: new TextEncoder().encode(encryptedText),
+            lang: "en"
+          }]
+        });
+
+        // Prepare registration data
+        const data = {
+          username: document.getElementById('username').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value,
+          mobileNumber: fullNumber,
+          authData: {
+            aesKey,
+            expectedText: uniqueExpectedText,
+            allowedSerial: rawSerial, 
+            encryptedText
+          }
+        };
+
+        // Register user
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Registration failed');
+
+        nfcStatus.textContent = '✅ NFC registered successfully!';
+        nextSection('final');
+      } catch (err) {
+        console.error("NFC registration error:", err);
+        nfcStatus.textContent = 'Error: ' + err.message;
+        scanBtn.disabled = false;
+      }
+    };
+
+    ndef.onerror = (err) => {
+      console.error("NFC error:", err);
+      nfcStatus.textContent = 'NFC error: ' + err.message;
+      scanBtn.disabled = false;
+    };
+
+  } catch (err) {
+    console.error("NFC setup error:", err);
+    nfcStatus.textContent = 'NFC error: ' + err.message;
+    scanBtn.disabled = false;
+  }
+}
+
+  async function submitForm(nfcData) {
+    try {
+      const data = {
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        mobileNumber: fullNumber,
+        authData: nfcData || null
+      };
+
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+
+      nextSection('final');
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert(`Registration failed: ${err.message}`);
+    }
+  }
+
+  function generateRandomHex(len) {
+    return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function encryptText(text, hexKey) {
+    try {
+      const key = await crypto.subtle.importKey(
+        'raw',
+        new Uint8Array(hexKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16))),
+        'AES-CBC',
+        false,
+        ['encrypt']
+      );
+      const iv = crypto.getRandomValues(new Uint8Array(16));
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-CBC', iv },
+        key,
+        new TextEncoder().encode(text)
+      );
+      return btoa([...iv, ...new Uint8Array(encrypted)].map(b => String.fromCharCode(b)).join(''));
+    } catch (err) {
+      console.error("Encryption error:", err);
+      throw err;
+    }
+  }
+  </script>
+</body>
+</html>

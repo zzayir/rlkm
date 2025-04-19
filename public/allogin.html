@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Login with OTP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --success-color: #4bb543;
+      --error-color: #ff3333;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 450px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+    
+    .header h2 {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-weight: 300;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .form-container {
+      padding: 30px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark-color);
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn:hover {
+      background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .otp-section {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .otp-inputs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .otp-input {
+      width: 50px;
+      height: 50px;
+      text-align: center;
+      font-size: 18px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    
+    .otp-input:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .resend-otp {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    
+    .resend-otp a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .resend-otp a:hover {
+      text-decoration: underline;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+    
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .divider-text {
+      padding: 0 10px;
+      color: #6c757d;
+      font-size: 14px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #6c757d;
+    }
+    
+    .footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake {
+      animation: shake 0.4s ease;
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+    }
+    
+    .success-message {
+      color: var(--success-color);
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+    }
+    
+    .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 40px;
+      cursor: pointer;
+      color: #6c757d;
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        border-radius: 10px;
+      }
+      
+      .header {
+        padding: 20px;
+      }
+      
+      .form-container {
+        padding: 20px;
+      }
+      
+      .otp-input {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Secure Login</h2>
+      <p>Two-factor authentication for your security</p>
+    </div>
+    
+    <div class="form-container">
+      <form id="loginForm" onsubmit="sendOTP(event)">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" class="form-control" placeholder="Enter your username" required>
+          <div class="error-message" id="usernameError"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+          <i class="fas fa-eye password-toggle" id="togglePassword"></i>
+          <div class="error-message" id="passwordError"></div>
+        </div>
+        
+        <button type="submit" class="btn" id="sendOtpBtn">
+          <span id="btnText">Send OTP</span>
+          <i class="fas fa-spinner fa-spin" id="spinner" style="display: none;"></i>
+        </button>
+      </form>
+      
+      <div class="otp-section" id="otpSection">
+        <div class="divider">
+          <div class="divider-text">Enter Verification Code</div>
+        </div>
+        
+        <form id="otpForm" onsubmit="verifyOTP(event)">
+          <div class="form-group">
+            <label>6-digit OTP</label>
+            <div class="otp-inputs">
+              <input type="text" class="otp-input" maxlength="1" data-index="1" oninput="moveToNext(this)">
+              <input type="text" class="otp-input" maxlength="1" data-index="2" oninput="moveToNext(this)">
+              <input type="text" class="otp-input" maxlength="1" data-index="3" oninput="moveToNext(this)">
+              <input type="text" class="otp-input" maxlength="1" data-index="4" oninput="moveToNext(this)">
+              <input type="text" class="otp-input" maxlength="1" data-index="5" oninput="moveToNext(this)">
+              <input type="text" class="otp-input" maxlength="1" data-index="6" oninput="moveToNext(this)">
+            </div>
+            <input type="hidden" id="otp">
+            <div class="success-message" id="otpSuccess">OTP sent successfully!</div>
+            <div class="error-message" id="otpError"></div>
+          </div>
+          
+          <button type="submit" class="btn" id="verifyOtpBtn">
+            <span id="verifyBtnText">Verify & Login</span>
+            <i class="fas fa-spinner fa-spin" id="verifySpinner" style="display: none;"></i>
+          </button>
+          
+          <div class="resend-otp">
+            Didn't receive code? <a href="#" onclick="resendOTP()">Resend OTP</a>
+          </div>
+        </form>
+      </div>
+      
+      <div class="footer">
+        <p>By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+    
+    togglePassword.addEventListener('click', function() {
+      const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+      password.setAttribute('type', type);
+      this.classList.toggle('fa-eye-slash');
+    });
+    
+    // OTP input navigation
+    function moveToNext(input) {
+      const nextIndex = parseInt(input.dataset.index) + 1;
+      const prevIndex = parseInt(input.dataset.index) - 1;
+      
+      if (input.value.length === 1 && nextIndex <= 6) {
+        document.querySelector(`.otp-input[data-index="${nextIndex}"]`).focus();
+      } else if (input.value.length === 0 && prevIndex >= 1) {
+        document.querySelector(`.otp-input[data-index="${prevIndex}"]`).focus();
+      }
+      
+      updateOTPValue();
+    }
+    
+    function updateOTPValue() {
+      const otpInputs = document.querySelectorAll('.otp-input');
+      let otpValue = '';
+      
+      otpInputs.forEach(input => {
+        otpValue += input.value;
+      });
+      
+      document.getElementById('otp').value = otpValue;
+    }
+    
+    // Add event listeners for OTP inputs to update the hidden field
+    document.querySelectorAll('.otp-input').forEach(input => {
+      input.addEventListener('input', updateOTPValue);
+    });
+    
+    // Show loading state
+    function showLoading(btn, spinner, btnText) {
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      btnText.style.display = 'none';
+    }
+    
+    // Hide loading state
+    function hideLoading(btn, spinner, btnText) {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.style.display = 'inline';
+    }
+    
+    // Show error message
+    function showError(element, message) {
+      element.textContent = message;
+      element.style.display = 'block';
+      element.parentElement.classList.add('shake');
+      setTimeout(() => {
+        element.parentElement.classList.remove('shake');
+      }, 400);
+    }
+    
+    // Hide error message
+    function hideError(element) {
+      element.style.display = 'none';
+    }
+    
+    // Show success message
+    function showSuccess(element, message) {
+      element.textContent = message;
+      element.style.display = 'block';
+    }
+    
+    // Hide success message
+    function hideSuccess(element) {
+      element.style.display = 'none';
+    }
+    
+    // Resend OTP function
+    function resendOTP() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      if (!username || !password) {
+        showError(document.getElementById('otpError'), 'Please enter your username and password first');
+        return;
+      }
+      
+      sendOTP({ preventDefault: () => {} });
+    }
+    
+    // Send OTP function
+    async function sendOTP(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const sendOtpBtn = document.getElementById('sendOtpBtn');
+      const spinner = document.getElementById('spinner');
+      const btnText = document.getElementById('btnText');
+      
+      // Hide any previous errors
+      hideError(document.getElementById('usernameError'));
+      hideError(document.getElementById('passwordError'));
+      hideError(document.getElementById('otpError'));
+      hideSuccess(document.getElementById('otpSuccess'));
+      
+      // Show loading state
+      showLoading(sendOtpBtn, spinner, btnText);
+      
+      try {
+        // Simulate API call (replace with actual fetch)
+        const response = await fetch('/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          document.getElementById('otpSection').style.display = 'block';
+          showSuccess(document.getElementById('otpSuccess'), 'OTP sent to your registered mobile number');
+          // Focus on first OTP input
+          document.querySelector('.otp-input[data-index="1"]').focus();
+        } else {
+          showError(document.getElementById('usernameError'), result.message || 'Failed to send OTP');
+        }
+      } catch (error) {
+        showError(document.getElementById('usernameError'), 'Network error. Please try again.');
+      } finally {
+        hideLoading(sendOtpBtn, spinner, btnText);
+      }
+    }
+    
+    // Verify OTP function
+    async function verifyOTP(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const otp = document.getElementById('otp').value;
+      const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+      const verifySpinner = document.getElementById('verifySpinner');
+      const verifyBtnText = document.getElementById('verifyBtnText');
+      
+      // Hide any previous errors
+      hideError(document.getElementById('otpError'));
+      
+      // Validate OTP length
+      if (otp.length !== 6) {
+        showError(document.getElementById('otpError'), 'Please enter a 6-digit OTP');
+        return;
+      }
+      
+      // Show loading state
+      showLoading(verifyOtpBtn, verifySpinner, verifyBtnText);
+      
+      try {
+        // Simulate API call (replace with actual fetch)
+        const response = await fetch('/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, otp })
+        });
+        
+        const result = await response.json();
+        
+        if (result.valid) {
+          window.location.href = 'home.html';
+        } else {
+          showError(document.getElementById('otpError'), result.message || 'Invalid or expired OTP');
+          // Clear OTP inputs
+          document.querySelectorAll('.otp-input').forEach(input => {
+            input.value = '';
+          });
+          document.querySelector('.otp-input[data-index="1"]').focus();
+        }
+      } catch (error) {
+        showError(document.getElementById('otpError'), 'Network error. Please try again.');
+      } finally {
+        hideLoading(verifyOtpBtn, verifySpinner, verifyBtnText);
+      }
+    }
+  </script>
+</body>
+</html>
