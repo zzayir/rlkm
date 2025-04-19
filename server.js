@@ -226,7 +226,8 @@ app.post("/api/nfc-auth", async (req, res, next) => {
       console.log("✅ Access Granted");
       return res.json({ 
         success: true, 
-        message: "Access granted" 
+        message: "Access granted",
+        isManager: isManager
       });
     } else {
       console.log("❌ Access Denied: Text Mismatch");
