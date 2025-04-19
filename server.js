@@ -161,36 +161,32 @@ function decryptNFCData(encryptedBase64, aesKeyHex) {
 
 
 // Modified NFC auth endpoint
-app.post("/api/nfc-auth", async (req, res) => {
+app.post("/api/nfc-auth", async (req, res, next) => {
+  
+  const { aesKey, encryptedData } = req.body;
+  const keyBuffer = Buffer.from(aesKey, 'hex');
+  const decryptedText = decryptNFCData(encryptedData, keyBuffer);
+  
+  console.log("Request received for NFC Auth", req.body);
   try {
-    const { encryptedData, serial, username, isManager, aesKey, expectedText } = req.body;
+    const { encryptedData, serial, username, isManager } = req.body;
     
-    console.log("NFC Auth Request:", { username, isManager, serial });
-
-    // Validate required fields
-    if (!encryptedData || !serial || !username || !aesKey || !expectedText) {
-      console.log("Missing required fields:", {
-        encryptedData: !!encryptedData,
-        serial: !!serial,
-        username: !!username,
-        aesKey: !!aesKey,
-        expectedText: !!expectedText
-      });
+    if (!encryptedData || !serial || !username) {
+      console.log("❌ Missing required fields");
       return res.status(400).json({ 
         success: false, 
-        message: "Missing required authentication data" 
+        message: "Missing required fields" 
       });
     }
 
-    // Find the user in the appropriate collection
     const Model = isManager ? Manager : User;
     const account = await Model.findOne({ username });
 
     if (!account) {
-      console.log("User not found:", username);
+      console.log("❌ User not found");
       return res.status(404).json({ 
         success: false, 
-        message: "Account not found" 
+        message: "User not found" 
       });
     }
 
