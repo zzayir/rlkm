@@ -254,87 +254,8 @@ document.getElementById("backupCodeBtn")?.addEventListener("click", function() {
 });
 
 // Backup code back button
-document.getElementById("backupCodeBackBtn")?.addEventListener("click", function() {
-  const overlay = document.getElementById("nfcAuthOverlay");
-  const modal = document.getElementById("backupCodeModal");
-  
-  if (modal) modal.style.display = "none";
-  if (overlay) overlay.style.display = "flex";
-  
-  // Clear backup code inputs
-  document.getElementById("backupCode1").value = "";
-  document.getElementById("backupCode2").value = "";
-  document.getElementById("backupCode3").value = "";
-  document.getElementById("backupCodeStatus").textContent = "";
-});
-
-// Verify backup code
-document.getElementById("verifyBackupCodeBtn")?.addEventListener("click", async function() {
-  const code1 = document.getElementById("backupCode1")?.value || "";
-  const code2 = document.getElementById("backupCode2")?.value || "";
-  const code3 = document.getElementById("backupCode3")?.value || "";
-  
-  const fullCode = code1 + code2 + code3;
-  const statusEl = document.getElementById("backupCodeStatus");
-  
-  if (!statusEl) return;
-
-  try {
-    const res = await fetch("/api/verify-backup-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: CURRENT_USERNAME,
-        code: fullCode,
-        isManager: false
-      })
-    });
-
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.message || "Verification failed");
-    }
-
-    if (data.success) {
-      statusEl.innerHTML = "✅ Backup code verified!<br>Redirecting...";
-      
-      // Mark the code as used
-      await fetch("/api/mark-backup-code-used", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: CURRENT_USERNAME,
-          code: fullCode,
-          isManager: false
-        })
-      });
-      
-      setTimeout(() => {
-        window.location.href = "home.html";
-      }, 1000);
-    } else {
-      statusEl.textContent = "❌ Invalid backup code. Please try again.";
-    }
-  } catch (error) {
-    console.error("Backup code error:", error);
-    statusEl.textContent = "❌ Error verifying backup code";
-  }
-});
-
-// Auto-tab between backup code inputs
-document.getElementById("backupCode1")?.addEventListener("input", function() {
-  if (this.value.length === 4) {
-    const nextInput = document.getElementById("backupCode2");
-    if (nextInput) nextInput.focus();
-  }
-});
-
-document.getElementById("backupCode2")?.addEventListener("input", function() {
-  if (this.value.length === 4) {
-    const nextInput = document.getElementById("backupCode3");
-    if (nextInput) nextInput.focus();
-  }
+document.getElementById('backupCodeBtn').addEventListener('click', function () {
+  window.location.href = 'allogin.html';
 });
 
 // Security key button
