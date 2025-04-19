@@ -5,6 +5,8 @@ let USER_ALLOWED_SERIAL = "";
 let CURRENT_USERNAME = "";
 let USER_BACKUP_CODES = [];
 let USER_SECURITY_KEYS = {};
+// Add this with your other global variables
+let USER_IS_MANAGER = false;
 
 // USER LOGIN
 document.getElementById("loginForm")?.addEventListener("submit", async function (e) {
@@ -34,11 +36,6 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
     alert(data.message);
 
     if (data.message === "Login successful") {
-      // Ensure authData exists and has required fields
-      if (!data.authData || !data.authData.aesKey || !data.authData.expectedText) {
-        throw new Error("Missing authentication data in response");
-      }
-
       // Store all authentication data from the database
       USER_AES_KEY = data.authData.aesKey;
       USER_EXPECTED_TEXT = data.authData.expectedText;
@@ -46,12 +43,7 @@ document.getElementById("loginForm")?.addEventListener("submit", async function 
       CURRENT_USERNAME = data.username;
       USER_BACKUP_CODES = data.authData.backupCodes || [];
       USER_SECURITY_KEYS = data.authData.securityKeys || {};
-      
-      console.log("Auth data loaded:", { 
-        aesKey: USER_AES_KEY, 
-        expectedText: USER_EXPECTED_TEXT,
-        serial: USER_ALLOWED_SERIAL
-      });
+      USER_IS_MANAGER = false;
       
       showNFCAuth();
     }
@@ -96,6 +88,7 @@ document.getElementById("managerLoginForm")?.addEventListener("submit", async fu
       CURRENT_USERNAME = data.username;
       USER_BACKUP_CODES = data.authData.backupCodes || [];
       USER_SECURITY_KEYS = data.authData.securityKeys || {};
+      USER_IS_MANAGER = true;
       
       showNFCAuth();
     }
@@ -211,18 +204,20 @@ async function processNFCCard(encryptedBase64, serialNumber) {
         username: CURRENT_USERNAME,
         aesKey: USER_AES_KEY,
         expectedText: USER_EXPECTED_TEXT,
-        isManager: USER_IS_MANAGER // Use a variable that correctly identifies manager status
+        isManager: USER_IS_MANAGER // Use the dynamic flag here
       })
     });
 
     const data = await res.json();
     
-    if (!res.ok) throw new Error(data.message || "Authentication failed");
+    if (!res.ok) {
+      throw new Error(data.message || "Authentication failed");
+    }
 
     if (data.success) {
       statusEl.innerHTML = "✅ Authentication successful!<br>Redirecting...";
       setTimeout(() => {
-        // Use server-provided role if available, fallback to client-side variable
+        // Use the server response if available, otherwise fall back to client-side flag
         const isManager = data.isManager !== undefined ? data.isManager : USER_IS_MANAGER;
         window.location.href = isManager ? "employee.html" : "home.html";
       }, 1000);
@@ -236,7 +231,6 @@ async function processNFCCard(encryptedBase64, serialNumber) {
     scanBtn.disabled = false;
   }
 }
-
 // Back button functionality
 document.getElementById("backButton")?.addEventListener("click", function() {
   const overlay = document.getElementById("nfcAuthOverlay");
